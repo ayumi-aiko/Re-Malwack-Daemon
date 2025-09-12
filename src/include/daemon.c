@@ -1,42 +1,59 @@
 #include <daemon.h>
 
-int putConfig(const char *__variableName, const int __variableValue) {
+int putConfig(const char *variableName, const int variableValue) {
     FILE *fp = fopen(configScriptPath, "r");
-    if(!fp) abort_instance("putConfig", "Failed to open %s, please try again..", configScriptPath);
-    char **lines = NULL;
-    size_t count = 0;
-    char buffer[1024];
-    int found = 0;
-    while(fgets(buffer, sizeof(buffer), fp)) {
-        buffer[strcspn(buffer, "\r\n")] = 0;
-        if(strncmp(buffer, __variableName, strlen(__variableName)) == 0 && buffer[strlen(__variableName)] == '=') {
-            char newLine[256];
-            snprintf(newLine, sizeof(newLine), "%s=%d", __variableName, __variableValue);
-            lines = realloc(lines, sizeof(char*) * (count + 1));
-            lines[count++] = strdup(newLine);
-            found = 1;
+    if(!fp) {
+        consoleLog(LOG_LEVEL_ERROR, "putConfig", "Failed to open %s, please try again..", configScriptPath);
+        return 127;
+    }
+    // vars:
+    char contentFromFile[10000];
+    char **contentsOfConfig = malloc(400 * sizeof(char *));
+    int array = 0;
+    int arrayIndexOfVariable = -1;
+    if(!contentsOfConfig) {
+        consoleLog(LOG_LEVEL_ERROR, "putConfig", "Failed to allocate to contentsOfConfig variable.");
+        return -1;
+    }
+    while(fgets(contentFromFile, sizeof(contentFromFile), fp)) {
+        contentFromFile[strcspn(contentFromFile, "\r\n")] = 0;
+        // we will have to skip adding comments because fuck them idc
+        if(strncmp(contentFromFile, "#", 1) == 0) continue;
+        // we will replace the variable and it's value with this simple ahh trick.
+        if(strncmp(contentFromFile, variableName, strlen(variableName)) == 0 && contentFromFile[strlen(variableName)] == '=') arrayIndexOfVariable = array;
+        contentsOfConfig[array] = strdup(contentFromFile);
+        if(!contentsOfConfig[array]) {
+            fclose(fp);
+            for(int j = 0; j < array; j++) free(contentsOfConfig[j]);
+            free(contentsOfConfig);
+            consoleLog(LOG_LEVEL_ERROR, "putConfig", "Failed to allocate memory for %d in contentsOfConfig", array);
+            return 127;
         }
+        array++;
+    }
+    fclose(fp);
+    bool found = false;
+    FILE *fptr = fopen(configScriptPath, "w");
+    if(!fptr) {
+        for(int i = 0; i < array; i++) free(contentsOfConfig[i]);
+        consoleLog(LOG_LEVEL_ERROR, "putConfig", "Failed to open %s, please try again..", configScriptPath);
+        free(contentsOfConfig);
+        return 127;
+    }
+    for(int i = 0; i < array; i++) {
+        // write the old content till we stumble upon the one we actually need!
+        if(i != arrayIndexOfVariable) fprintf(fptr, "%s\n", contentsOfConfig[i]);
+            // write the new content because we got into the correct index!
         else {
-            lines = realloc(lines, sizeof(char*) * (count + 1));
-            lines[count++] = strdup(buffer);
+            fprintf(fptr, "%s=%d\n", variableName, variableValue);
+            found = true;
         }
+        free(contentsOfConfig[i]);
     }
-    fclose(fp);
-    if(!found) {
-        char newLine[256];
-        snprintf(newLine, sizeof(newLine), "%s=%d", __variableName, __variableValue);
-        lines = realloc(lines, sizeof(char*) * (count + 1));
-        lines[count++] = strdup(newLine);
-    }
-    fp = fopen(configScriptPath, "w");
-    if(!fp) abort_instance("putConfig", "Failed to write to %s", configScriptPath);
-    for(size_t i = 0; i < count; ++i) {
-        fprintf(fp, "%s\n", lines[i]);
-        free(lines[i]);
-    }
-    free(lines);
-    fclose(fp);
-    return 0;
+    free(contentsOfConfig);
+    fclose(fptr);
+    // more verbose but it does the j*b. Returns 0 if set!
+    return (found) ? 0 : 1;
 }
 
 bool isPackageInList(const char *packageName) {
@@ -342,55 +359,6 @@ void printBannerWithRandomFontStyle() {
     printf("%s\n", banners[index]);
 }
 
-void setAdblockSwitch(const char *configPath, int state) {
-    // variable declarations:
-    int modified = 0;
-    char line[1024];
-    char tempPath[1024];
-
-    // check if requested state is valid:
-    if(state != 0 && state != 1) {
-        consoleLog(LOG_LEVEL_ERROR, "setAdblockSwitch", "Invalid adblock state: %d (must be 0 or 1)", state);
-        return;
-    }
-
-    // create a temporary file path:
-    snprintf(tempPath, sizeof(tempPath), "%s.tmp", configPath);
-
-    // open the original config file for reading and a temporary file for writing:
-    FILE *original = fopen(configPath, "r");
-    if(!original) {
-        consoleLog(LOG_LEVEL_DEBUG, "setAdblockSwitch", " Failed to open config file: %s", configPath);
-        return;
-    }
-
-    // open a temporary file for writing:
-    FILE *temp = fopen(tempPath, "w");
-    if(!temp) {
-        consoleLog(LOG_LEVEL_DEBUG, "setAdblockSwitch", "Failed to open temporary file: %s", tempPath);
-        fclose(original);
-        return;
-    }
-
-    // read the original file line by line:
-    // if the line starts with "adblock_switch=", replace it with the new state:
-    while(fgets(line, sizeof(line), original)) {
-        if(strncmp(line, "adblock_switch=", 15) == 0) {
-            fprintf(temp, "adblock_switch=%d\n", state);
-            modified = 1;
-        }
-        else fputs(line, temp);
-    }
-
-    // If "adblock_switch=" was not found, append it at the end
-    if(!modified) fprintf(temp, "adblock_switch=%d\n", state);
-    
-    // close the files after operation:
-    fclose(original);
-    fclose(temp);
-    if(rename(tempPath, configPath) != 0) consoleLog(LOG_LEVEL_DEBUG, "setAdblockSwitch", "Failed to replace original config file: %s", configPath);
-}
-
 void pauseADBlock() {
     if(access(combineStringsFormatted("%s/hosts.bak", persistDir), F_OK) == 0) consoleLog(LOG_LEVEL_WARN, "pauseADBlock", "Protection is already paused!");
     refreshBlockedCounts(); // refresh it because both default val is set to 0
@@ -434,7 +402,7 @@ void resumeADBlock() {
         remove(hostsBackupPath);
         executeShellCommands("sync", (const char *[]){"sync", NULL});
         refreshBlockedCounts();
-        setAdblockSwitch(configScriptPath, 1);
+        putConfig("adblockSwitch", 1);
         consoleLog(LOG_LEVEL_DEBUG, "resumeADBlock", "Protection services have been resumed.");
     }
     else consoleLog(LOG_LEVEL_DEBUG, "resumeADBlock", "No backup hosts file found to resume.");

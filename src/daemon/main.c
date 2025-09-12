@@ -79,44 +79,46 @@ int main(int argc, const char *argv[]) {
     FILE *writePID = fopen(currentDaemonPIDFile, "w");
     if(!writePID) abort_instance("main-daemon", "Failed to write current PID for the manager application, please run this daemon again!");
     while(1) {
-        fprintf(writePID, "%d", getpid());
-        if(access(daemonLockFileStuck, F_OK) == 0) {
-            consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Waiting for user configurations to finish...");
-            usleep(500000);
-            continue;
-        }
-        if(access(daemonLockFileSuccess, F_OK) == 0) {
-            consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "A package list update was triggered. Reloading packages...");
-            FILE *packageLists = fopen(daemonPackageLists, "r");
-            if(!packageLists) abort_instance("main-daemon", "Failed to reopen package list file.");
-            i = 0;
-            while(fgets(stringsToFetch, sizeof(stringsToFetch), packageLists) != NULL && i < MAX_PACKAGES) {
-                stringsToFetch[strcspn(stringsToFetch, "\n")] = 0; // strip newline
-                strncpy(packageArray[i], stringsToFetch, PACKAGE_NAME_SIZE - 1);
-                packageArray[i][PACKAGE_NAME_SIZE - 1] = '\0';
-                i++;
+        if(strcmp(grepProp("enableDaemon", configScriptPath), "1") == 0) {
+            fprintf(writePID, "%d", getpid());
+            if(access(daemonLockFileStuck, F_OK) == 0) {
+                consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Waiting for user configurations to finish...");
+                usleep(500000);
+                continue;
             }
-            fclose(packageLists);
-            consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Reloaded %d packages into blocklist", i);
-            for(int j = 0; j < i; j++) consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "packageArray[%d]: %s", j, packageArray[j]);
-            remove(daemonLockFileSuccess);
-        }
-        char *currentPackage = getCurrentPackage();
-        if(currentPackage == NULL) {
-            consoleLog(LOG_LEVEL_WARN, "main-daemon", "Failed to get current package, retrying...");
-            usleep(500000);
-            continue;
-        }
-        for(int k = 0; k < i; k++) {
-            if(strcmp(currentPackage, packageArray[k]) == 0) {
-                consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "%s is currently running. Handling blocklist actions.", packageArray[k]);
-                pauseADBlock();
+            if(access(daemonLockFileSuccess, F_OK) == 0) {
+                consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "A package list update was triggered. Reloading packages...");
+                FILE *packageLists = fopen(daemonPackageLists, "r");
+                if(!packageLists) abort_instance("main-daemon", "Failed to reopen package list file.");
+                i = 0;
+                while(fgets(stringsToFetch, sizeof(stringsToFetch), packageLists) != NULL && i < MAX_PACKAGES) {
+                    stringsToFetch[strcspn(stringsToFetch, "\n")] = 0; // strip newline
+                    strncpy(packageArray[i], stringsToFetch, PACKAGE_NAME_SIZE - 1);
+                    packageArray[i][PACKAGE_NAME_SIZE - 1] = '\0';
+                    i++;
+                }
+                fclose(packageLists);
+                consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Reloaded %d packages into blocklist", i);
+                for(int j = 0; j < i; j++) consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "packageArray[%d]: %s", j, packageArray[j]);
+                remove(daemonLockFileSuccess);
             }
-            // call ts, dw as the function will ignore if it's resumed already.
-            else resumeADBlock();
+            char *currentPackage = getCurrentPackage();
+            if(currentPackage == NULL) {
+                consoleLog(LOG_LEVEL_WARN, "main-daemon", "Failed to get current package, retrying...");
+                usleep(500000);
+                continue;
+            }
+            for(int k = 0; k < i; k++) {
+                if(strcmp(currentPackage, packageArray[k]) == 0) {
+                    consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "%s is currently running. Handling blocklist actions.", packageArray[k]);
+                    pauseADBlock();
+                }
+                // call ts, dw as the function will ignore if it's resumed already.
+                else resumeADBlock();
+            }
+            // hmm, let's not fry the cpu.
+            usleep(500000);
         }
-        // hmm, let's not fry the cpu.
-        usleep(500000);
     }
     return 0;
 }

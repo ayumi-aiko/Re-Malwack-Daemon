@@ -58,7 +58,6 @@ char *modulePath(const char *Zero);
 void consoleLog(enum elogLevel loglevel, const char *service, const char *message, ...);
 void abort_instance(const char *service, const char *format, ...);
 void printBannerWithRandomFontStyle();
-void setAdblockSwitch(const char *configPath, int state);
 void pauseADBlock();
 void resumeADBlock();
 void help(const char *wehgcfbkfbjhyghxdrbtrcdfv);
