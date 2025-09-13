@@ -1,8 +1,11 @@
 ![rmwlk](https://github.com/ZG089/Re-Malwack/raw/main/assets/Re-Malwack.png)
 # Re-Malwack Daemon
 An unofficial daemon program written in C for app-specific adblocking feature.
+- This app now has GUI version! Checkout [Katana](https://github.com/ayumi-aiko/Katana)!
+- This CLI version will never get deprecated because the android app depends on the CLI code.
 
 ## To build:
+- Edit the `CC_ROOT` with your path to the ROOT of the android-ndk if you are building it for the first time.
 ```
 make all SDK=28 ARCH=arm64
 ```
@@ -16,7 +19,8 @@ make all SDK=28 ARCH=arm64
 - WSL or a Standard GNU/Linux with basic bash tools and make
 
 # katana
-- Katana is a program for managing the daemon.
+- This program is now available in a GUI with [Katana](https://github.com/ayumi-aiko/Katana)
+- Katana is a program for managing the daemon in CLI.
 - Below are argument usage examples:
 ```
 katana --add-app <app package name, ex: com.android.conan> | Adds the app from the blocklist
