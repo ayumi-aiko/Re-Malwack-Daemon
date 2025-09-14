@@ -12,11 +12,13 @@ char *version = NULL;
 char *versionCode = NULL;
 char *hostsPath = NULL;
 char *hostsBackupPath = NULL;
-const char *daemonLogs = "/sdcard/daemon.logs";
+const char *daemonLogs = "/sdcard/Android/data/ishimi.katamari/logs.katamari.log";
 const char *persistDir = "/data/adb/Re-Malwack";
-const char *daemonPackageLists = "/data/system/remalwack-package-lists.txt";
-const char *daemonLockFileStuck = "/data/system/.daemon0";
-const char *daemonLockFileSuccess = "/data/system/.daemon1";
+const char *daemonPackageLists = "/data/adb/Re-Malwack/remalwack-package-lists.txt";
+const char *previousDaemonPackageLists = "/data/adb/Re-Malwack/previousDaemonList";
+const char *daemonLockFileStuck = "/data/adb/Re-Malwack/.daemon0";
+const char *daemonLockFileSuccess = "/data/adb/Re-Malwack/.daemon1";
+const char *daemonLockFileFailure = "/data/adb/Re-Malwack/.daemon2";
 const char *systemHostsPath = "/system/etc/hosts";
 const char *currentDaemonPIDFile = "/data/adb/Shizuka/currentDaemonPID";
 
@@ -60,6 +62,11 @@ int main(int argc, const char *argv[]) {
         consoleLog(LOG_LEVEL_WARN, "main-daemon", "Sorry dear termux user, you CANNOT run this daemon in termux. Termux is not supported by Re-Malwack Daemon.");
         executeShellCommands("exit", (const char*[]) { "exit", "1", NULL });
     }
+    // always have a backup of the daemonPackageLists because we need to have to use this
+    // backup as a failsafe method when the crp didn't import properly.
+    if(executeShellCommands("su", (const char*[]) {"su", "-c", "cp", "-af", daemonPackageLists, "/data/adb/Re-Malwack/previousDaemonList", NULL}) != 0) {
+        abort_instance("main-daemon", "Failed to backup the daemon package lists, please try again!");
+    }
     consoleLog(LOG_LEVEL_INFO, "main-daemon", "Reading encoded package list...");
     FILE *packageLists = fopen(daemonPackageLists, "rb");
     if(!packageLists) abort_instance("main-daemon", "Failed to open package list file.");
@@ -101,6 +108,17 @@ int main(int argc, const char *argv[]) {
                 consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Reloaded %d packages into blocklist", i);
                 for(int j = 0; j < i; j++) consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "packageArray[%d]: %s", j, packageArray[j]);
                 remove(daemonLockFileSuccess);
+            }
+            else if(access(daemonLockFileFailure, F_OK) == 0) {
+                consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "An reset was triggered. Reverting to previous state...");
+                if(executeShellCommands("su", (const char*[]) {"su", "-c", "cp", "-af", previousDaemonPackageLists, daemonPackageLists, NULL}) == 0) {
+                    abort_instance("main-daemon", "Failed to restore the package list, please try again!");
+                }
+                else {
+                    consoleLog(LOG_LEVEL_INFO, "main-daemon", "Reset finished successfully! Skipping this loop and building list again...");
+                    // skip this after doing this because i dont want to code too much!
+                    continue;
+                }
             }
             char *currentPackage = getCurrentPackage();
             if(currentPackage == NULL) {

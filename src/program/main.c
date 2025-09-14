@@ -12,14 +12,15 @@ char *version = NULL;
 char *versionCode = NULL;
 char *hostsPath = NULL;
 char *hostsBackupPath = NULL;
-const char *daemonLogs = "/sdcard/daemon.logs";
+const char *daemonLogs = "/sdcard/Android/data/ishimi.katamari/logs.katamari.log";
 const char *persistDir = "/data/adb/Re-Malwack";
-const char *daemonPackageLists = "/data/system/remalwack-package-lists.txt";
-const char *daemonLockFileStuck = "/data/system/.daemon0";
-const char *daemonLockFileSuccess = "/data/system/.daemon1";
+const char *daemonPackageLists = "/data/adb/Re-Malwack/remalwack-package-lists.txt";
+const char *daemonLockFileStuck = "/data/adb/Re-Malwack/.daemon0";
+const char *daemonLockFileSuccess = "/data/adb/Re-Malwack/.daemon1";
+const char *daemonLockFileFailure = "/data/adb/Re-Malwack/.daemon2";
 const char *systemHostsPath = "/system/etc/hosts";
 
-int main(int argc, const char *argv[]) {
+int main(int argc, const char *argv[]) {    
     printBannerWithRandomFontStyle();
     if(getuid()) abort_instance("main-katana", "- This binary should be running as root.");
 
@@ -50,7 +51,10 @@ int main(int argc, const char *argv[]) {
             remove(daemonLockFileStuck);
             finishMessage("main-katana", "Successfully imported the package list. Thank you for using Re-Malwack!");
         }
-        else abort_instance("main-katana", "Failed to import the package list. Please try again!");
+        else {
+            abort_instance("main-katana", "Failed to import the package list. Please try again!");
+            eraseFile(daemonLockFileFailure);
+        }
     }
     else help(argv[0]);
     return 1;
