@@ -1,3 +1,19 @@
+//
+// Copyright (C) 2025 愛子あゆみ <ayumi.aiko@outlook.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
 #include <daemon.h>
 
 int putConfig(const char *variableName, const int variableValue) {
@@ -43,7 +59,7 @@ int putConfig(const char *variableName, const int variableValue) {
     for(int i = 0; i < array; i++) {
         // write the old content till we stumble upon the one we actually need!
         if(i != arrayIndexOfVariable) fprintf(fptr, "%s\n", contentsOfConfig[i]);
-            // write the new content because we got into the correct index!
+        // write the new content because we got into the correct index!
         else {
             fprintf(fptr, "%s=%d\n", variableName, variableValue);
             found = true;
@@ -402,10 +418,14 @@ void resumeADBlock() {
         remove(hostsBackupPath);
         executeShellCommands("sync", (const char *[]){"sync", NULL});
         refreshBlockedCounts();
-        putConfig("adblockSwitch", 1);
+        putConfig("adblockSwitch", 0);
         consoleLog(LOG_LEVEL_DEBUG, "resumeADBlock", "Protection services have been resumed.");
     }
-    else consoleLog(LOG_LEVEL_DEBUG, "resumeADBlock", "No backup hosts file found to resume.");
+    else {
+        consoleLog(LOG_LEVEL_DEBUG, "resumeADBlock", "No backup hosts file found to resume, force resuming protection and running hosts update as a fallback action");
+        putConfig("adblockSwitch", 0);
+        system("/data/adb/Re-Malwack/rmlwk.sh --update-hosts");
+    }
 }
 
 void help(const char *wehgcfbkfbjhyghxdrbtrcdfv) {
@@ -495,4 +515,11 @@ void reWriteModuleProp(const char *desk) {
     fprintf(moduleProp, "donate=https://buymeacoffee.com/zg089\n");
     fprintf(moduleProp, "banner=https://raw.githubusercontent.com/ZG089/Re-Malwack/main/assets/banner.png");
     fclose(moduleProp);
+}
+
+void writeCurrentProcessID(void) {
+    FILE *writePID = fopen(currentDaemonPIDFile, "w");
+    if(!writePID) abort_instance("main-daemon", "Failed to write current PID for the manager application, please run this daemon again!");
+    fprintf(writePID, "%d", getpid());
+    fclose(writePID);
 }

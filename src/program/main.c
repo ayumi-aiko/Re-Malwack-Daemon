@@ -1,3 +1,19 @@
+//
+// Copyright (C) 2025 愛子あゆみ <ayumi.aiko@outlook.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
 #include <daemon.h>
 
 // vars:
@@ -19,6 +35,7 @@ const char *daemonLockFileStuck = "/data/adb/Re-Malwack/.daemon0";
 const char *daemonLockFileSuccess = "/data/adb/Re-Malwack/.daemon1";
 const char *daemonLockFileFailure = "/data/adb/Re-Malwack/.daemon2";
 const char *systemHostsPath = "/system/etc/hosts";
+const char *currentDaemonPIDFile = "/data/adb/Shizuka/currentDaemonPID";
 
 int main(int argc, const char *argv[]) {    
     printBannerWithRandomFontStyle();

@@ -1,3 +1,19 @@
+//
+// Copyright (C) 2025 愛子あゆみ <ayumi.aiko@outlook.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
 #include <daemon.h>
 
 // vars:
@@ -83,11 +99,10 @@ int main(int argc, const char *argv[]) {
     consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Loaded %d packages into blocklist", i);
     for(int j = 0; j < i; j++) consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "packageArray[%d]: %s", j, packageArray[j]);
     consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Entering blocklist monitoring loop...");
-    FILE *writePID = fopen(currentDaemonPIDFile, "w");
-    if(!writePID) abort_instance("main-daemon", "Failed to write current PID for the manager application, please run this daemon again!");
     while(1) {
+        // write the pid so we can kill it later inside the app.
+        writeCurrentProcessID();
         if(strcmp(grepProp("enableDaemon", configScriptPath), "1") == 0) {
-            fprintf(writePID, "%d", getpid());
             if(access(daemonLockFileStuck, F_OK) == 0) {
                 consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Waiting for user configurations to finish...");
                 usleep(500000);
@@ -115,6 +130,7 @@ int main(int argc, const char *argv[]) {
                     abort_instance("main-daemon", "Failed to restore the package list, please try again!");
                 }
                 else {
+                    remove(daemonLockFileFailure);
                     consoleLog(LOG_LEVEL_INFO, "main-daemon", "Reset finished successfully! Skipping this loop and building list again...");
                     // skip this after doing this because i dont want to code too much!
                     continue;
@@ -137,6 +153,18 @@ int main(int argc, const char *argv[]) {
             // hmm, let's not fry the cpu.
             usleep(500000);
         }
+        else {
+            // kill ourselves!
+            freePointer((void **)&MODPATH);
+            freePointer((void **)&hostsBackupPath);
+            freePointer((void **)&hostsPath);
+            freePointer((void **)&configScriptPath);
+            exit(EXIT_SUCCESS);
+        }
     }
+    freePointer((void **)&MODPATH);
+    freePointer((void **)&hostsBackupPath);
+    freePointer((void **)&hostsPath);
+    freePointer((void **)&configScriptPath);
     return 0;
 }

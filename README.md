@@ -32,6 +32,9 @@ katana --export-package-list <path, ex: /sdcard/export-katana.txt> | For exporti
 katana --import-package-list <path, ex: /sdcard/export-katana.txt> | For importing the package lists
 ```
 
-# daemon
+## daemon
 - This app should only **RUN** in init or any prefered mode but not termux because termux is not suitable forever.
-- This app doesn't have any arguments handler because this app is only going to run in background. Arguments are managed by Katana.
+- This app doesn't have any arguments handler because this app is only going to run in background. Arguments are managed by [Katana](https://github.com/ayumi-aiko/Katana).
+
+## daemonStarter
+- This program is used to start the daemon safely. Not used by CLI actions and only used in the [Katana](https://github.com/ayumi-aiko/Katana) app for starting the daemon.

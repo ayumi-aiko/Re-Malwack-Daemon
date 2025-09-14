@@ -1,3 +1,20 @@
+#
+# Copyright (C) 2025 愛子あゆみ <ayumi.aiko@outlook.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
 # build arguments, its good to use tons of variable for portability.
 CC_ROOT = /home/ayumi/android-ndk-r27d/toolchains/llvm/prebuilt/linux-x86_64/bin
 CFLAGS = -std=c23 -O3 -static
@@ -59,8 +76,16 @@ katana: checkCompilerExistance banner
 	}
 	@echo "\e[0;36mmake: Info: Build finished without errors, be sure to check logs if concerned. Thank you!\e[0;37m"
 
+daemonStarter: checkCompilerExistance banner
+	@echo "\e[0;35mmake: Info: Trying to build daemonStarter..\e[0;37m"
+	@$(CC) $(CFLAGS) ./src/daemon/daemonStarter.c -o $(OUTPUT_DIR)/daemonStarter 2>./$(BUILD_LOGFILE) || { \
+		printf "\033[0;31mmake: Error: Build failure, check the logs for information. File can be found at $(BUILD_LOGFILE)\033[0m\n"; \
+		exit 1; \
+	}
+	@echo "\e[0;36mmake: Info: Build finished without errors, be sure to check logs if concerned. Thank you!\e[0;37m"
+
 # builds all:
-all: daemon katana
+all: daemon katana daemonStarter
 
 # prints the banner of the program.
 banner:
@@ -83,6 +108,7 @@ help:
 	@echo "\033[1;36mTargets:\033[0m"
 	@echo "  \033[0;32mdaemon\033[0m     Build the Re-Malwack daemon binary"
 	@echo "  \033[0;32mkatana\033[0m     Build the Re-Malwack daemon manager"
+	@echo "  \033[0;32mdaemonStarter\033[0m     Build the Re-Malwack's daemon starter"
 	@echo "  \033[0;32mclean\033[0m      Remove build artifacts"
 	@echo "  \033[0;32mhelp\033[0m       Show this help message"
 	@echo ""
@@ -91,7 +117,7 @@ help:
 
 # removes the stuff made by compiler and makefile.
 clean:
-	@rm -f $(BUILD_LOGFILE) $(OUTPUT_DIR)/remalwack-daemon $(OUTPUT_DIR)/remalwack-katana
+	@rm -f $(BUILD_LOGFILE) $(OUTPUT_DIR)/remalwack-daemon $(OUTPUT_DIR)/remalwack-katana $(OUTPUT_DIR)/daemonStarter
 	@echo "\033[0;32mmake: Info: Clean complete.\033[0m"
 
-.PHONY: daemon katana clean checkArgs checkCompilerExistance banner all
+.PHONY: daemon katana clean checkArgs checkCompilerExistance banner all daemonStarter
