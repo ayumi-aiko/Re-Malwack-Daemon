@@ -424,7 +424,7 @@ void resumeADBlock() {
     else {
         consoleLog(LOG_LEVEL_DEBUG, "resumeADBlock", "No backup hosts file found to resume, force resuming protection and running hosts update as a fallback action");
         putConfig("adblockSwitch", 0);
-        system("/data/adb/Re-Malwack/rmlwk.sh --update-hosts");
+        system("/data/adb/modules/Re-Malwack/bin/rmlwk.sh --update-hosts");
     }
 }
 
