@@ -31,7 +31,6 @@
 extern int blockedMod;
 extern int blockedSys;
 extern bool useStdoutForAllLogs;
-extern bool suppressEverythingExceptInfo;
 extern char *MODPATH;
 extern char *modulePropFile;
 extern char *version;

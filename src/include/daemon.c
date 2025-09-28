@@ -302,9 +302,6 @@ void consoleLog(enum elogLevel loglevel, const char *service, const char *messag
 void abort_instance(const char *service, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    // im not interested to write much, why dont we just change the value and make it pass it in the stderr?
-    // fuck you if you comment about my code style bitch!
-    suppressEverythingExceptInfo = false;
     consoleLog(LOG_LEVEL_ABORT, "%s", "%s %s", service, format, args);
     va_end(args);
     freePointer((void **)&MODPATH);

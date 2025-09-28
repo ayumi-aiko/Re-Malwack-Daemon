@@ -20,7 +20,6 @@
 int blockedMod = 0;
 int blockedSys = 0;
 bool useStdoutForAllLogs = false;
-bool suppressEverythingExceptInfo = false;
 char *configScriptPath = NULL;
 char *MODPATH = NULL;
 char *modulePropFile = NULL;
@@ -68,7 +67,7 @@ int main(int argc, const char *argv[]) {
     if(!configScriptPath) abort_instance("main-daemon", "Failed to retrieve config script path");
 
     // loop daemon action.
-    consoleLog(LOG_LEVEL_INFO, "main-daemon", "Re-Malwack Daemon v%s (versionCode: %s) is starting...", version, versionCode);
+    consoleLog(LOG_LEVEL_INFO, "main-daemon", "Re-Malwack v%s (versionCode: %s) is starting...", version, versionCode);
     printBannerWithRandomFontStyle();
     if(getuid()) abort_instance("main-daemon", "daemon is not running as root.");
     // force stop termux instance if it's found to be in top. Just to be sure that 
@@ -89,7 +88,7 @@ int main(int argc, const char *argv[]) {
     int i = 0;
     char packageArray[MAX_PACKAGES][PACKAGE_NAME_SIZE];
     char stringsToFetch[PACKAGE_NAME_SIZE];
-    while (fgets(stringsToFetch, sizeof(stringsToFetch), packageLists) != NULL && i < MAX_PACKAGES) {
+    while(fgets(stringsToFetch, sizeof(stringsToFetch), packageLists) != NULL && i < MAX_PACKAGES) {
         stringsToFetch[strcspn(stringsToFetch, "\n")] = 0;
         strncpy(packageArray[i], stringsToFetch, PACKAGE_NAME_SIZE - 1);
         packageArray[i][PACKAGE_NAME_SIZE - 1] = '\0';
