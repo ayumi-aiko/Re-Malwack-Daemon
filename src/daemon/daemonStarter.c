@@ -18,17 +18,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <sys/types.h>
-
-bool checkFileExistance(const char *filePath) {
-    FILE *fihfiuiufh = fopen(filePath, "a");
-    if(!fihfiuiufh) {
-        printf("Failed to open %s\n", filePath);
-        return false;
-    }
-    fclose(fihfiuiufh);
-    return true;
-}
 
 // detaches the daemon, we can use detach like we do with bash but
 // we are targetting sh.
@@ -39,8 +28,11 @@ int main(void) {
     }
     
     // checks before running daemon!
-    checkFileExistance("/data/adb/Re-Malwack/module.prop");
-    if(!checkFileExistance("/data/adb/Re-Malwack/currentDaemonPID")) system("echo "" > /data/adb/Re-Malwack/currentDaemonPID");
+    if(access("/data/adb/Re-Malwack/module.prop", F_OK) != 0) {
+        printf("Please install Re-Malwack to proceed.\n");
+        exit(EXIT_FAILURE);
+    }
+    if(access("/data/adb/Re-Malwack/currentDaemonPID", F_OK) != 0) system("echo "" > /data/adb/Re-Malwack/currentDaemonPID");
     system("rm -rf /data/adb/Re-Malwack/.daemon1");
     
     // let's not handle unknown because we are not gonna wait for the fork to finish and

@@ -96,7 +96,6 @@ int main(int argc, const char *argv[]) {
     }
     fclose(packageLists);
     consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Loaded %d packages into blocklist", i);
-    for(int j = 0; j < i; j++) consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "packageArray[%d]: %s", j, packageArray[j]);
     consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Entering blocklist monitoring loop...");
     while(1) {
         // write the pid so we can kill it later inside the app.
@@ -120,7 +119,6 @@ int main(int argc, const char *argv[]) {
                 }
                 fclose(packageLists);
                 consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Reloaded %d packages into blocklist", i);
-                for(int j = 0; j < i; j++) consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "packageArray[%d]: %s", j, packageArray[j]);
                 remove(daemonLockFileSuccess);
             }
             else if(access(daemonLockFileFailure, F_OK) == 0) {

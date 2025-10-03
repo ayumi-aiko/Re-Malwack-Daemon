@@ -499,18 +499,19 @@ void refreshBlockedCounts() {
 
 void reWriteModuleProp(const char *desk) {
     // "write" instead of "append" to rewrite everything line by line.
-    FILE *moduleProp = fopen(modulePropFile, "w");
-    if(!moduleProp) abort_instance("reWriteModuleProp", "Failed to open module prop file: %s", modulePropFile);
-    fprintf(moduleProp, "id=Re-Malwack\n");
-    fprintf(moduleProp, "name=Re-Malwack | Not just a normal ad-blocker module ✨\n");
-    fprintf(moduleProp, "version=%s\n", version);
-    fprintf(moduleProp, "versionCode=%s\n", versionCode);
-    fprintf(moduleProp, "author=ZG089\n");
-    fprintf(moduleProp, "description=%s\n", desk);
-    fprintf(moduleProp, "updateJson=https://raw.githubusercontent.com/ZG089/Re-Malwack/main/update.json\n");
-    fprintf(moduleProp, "support=https://t.me/Re_Malwack\n");
-    fprintf(moduleProp, "donate=https://buymeacoffee.com/zg089\n");
-    fprintf(moduleProp, "banner=https://raw.githubusercontent.com/ZG089/Re-Malwack/main/assets/banner.png");
+    // you know what? forget it, i was just being lame.
+    // so basically i hate the way i wrote the property before. it feels like crap.
+    FILE *moduleProp = fopen(modulePropFile, "r+");
+    if(!moduleProp) abort_instance("reWriteModuleProp", "Failed to open module's property file. Please report this error in my discord!");
+    char content[1024];
+    while(fgets(content, sizeof(content), moduleProp)) {
+        // let's remove the newline if we are in desc.
+        if(strstr(content, "description")) { 
+            content[strcspn(content, "\n")] = 0;
+            fprintf(moduleProp, "description=%s\n", desk);
+        }
+        else fputs(content, moduleProp);
+    }
     fclose(moduleProp);
 }
 
