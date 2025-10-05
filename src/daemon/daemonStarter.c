@@ -28,7 +28,7 @@ int main(void) {
     }
     
     // checks before running daemon!
-    if(access("/data/adb/Re-Malwack/module.prop", F_OK) != 0) {
+    if(access("/data/adb/modules/Re-Malwack/module.prop", F_OK) != 0) {
         printf("Please install Re-Malwack to proceed.\n");
         exit(EXIT_FAILURE);
     }
@@ -37,7 +37,7 @@ int main(void) {
     
     // let's not handle unknown because we are not gonna wait for the fork to finish and
     // we be exiting this shit after we make this child (ts soo kevin 😭🥀)
-    char *pathToDaemon = "/data/adb/Re-Malwack/remalwack-daemon";
+    char *pathToDaemon = "/data/adb/modules/Re-Malwack/remalwack-daemon";
     switch(fork()) {
         case -1:
             printf("Failed to fork a child process, please try running this binary again!\n");

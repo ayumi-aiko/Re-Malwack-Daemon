@@ -7,3 +7,4 @@ daemon.logs
 build.sh
 build.bat
 key
+move.sh

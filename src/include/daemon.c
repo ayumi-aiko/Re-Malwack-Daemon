@@ -16,60 +16,31 @@
 //
 #include <daemon.h>
 
-int putConfig(const char *variableName, const int variableValue) {
+int putConfig(const char *variableName, int variableValue) {
     FILE *fp = fopen(configScriptPath, "r");
     if(!fp) {
-        consoleLog(LOG_LEVEL_ERROR, "putConfig", "Failed to open %s, please try again..", configScriptPath);
+        consoleLog(LOG_LEVEL_ERROR, "putConfig", "Failed to open %s in read-only mode, please try again..", configScriptPath);
         return 127;
     }
-    // vars:
-    char contentFromFile[10000];
-    char **contentsOfConfig = malloc(400 * sizeof(char *));
-    int array = 0;
-    int arrayIndexOfVariable = -1;
-    if(!contentsOfConfig) {
-        consoleLog(LOG_LEVEL_ERROR, "putConfig", "Failed to allocate to contentsOfConfig variable.");
-        return -1;
-    }
-    while(fgets(contentFromFile, sizeof(contentFromFile), fp)) {
-        contentFromFile[strcspn(contentFromFile, "\r\n")] = 0;
-        // we will have to skip adding comments because fuck them idc
-        if(strncmp(contentFromFile, "#", 1) == 0) continue;
-        // we will replace the variable and it's value with this simple ahh trick.
-        if(strncmp(contentFromFile, variableName, strlen(variableName)) == 0 && contentFromFile[strlen(variableName)] == '=') arrayIndexOfVariable = array;
-        contentsOfConfig[array] = strdup(contentFromFile);
-        if(!contentsOfConfig[array]) {
-            fclose(fp);
-            for(int j = 0; j < array; j++) free(contentsOfConfig[j]);
-            free(contentsOfConfig);
-            consoleLog(LOG_LEVEL_ERROR, "putConfig", "Failed to allocate memory for %d in contentsOfConfig", array);
-            return 127;
-        }
-        array++;
-    }
+    int lineCount = 0;
+    bool didItGetChanged = false;
+    char lines[64][256];
+    while(fgets(lines[lineCount], sizeof(lines[lineCount]), fp)) lineCount++;
     fclose(fp);
-    bool found = false;
-    FILE *fptr = fopen(configScriptPath, "w");
-    if(!fptr) {
-        for(int i = 0; i < array; i++) free(contentsOfConfig[i]);
-        consoleLog(LOG_LEVEL_ERROR, "putConfig", "Failed to open %s, please try again..", configScriptPath);
-        free(contentsOfConfig);
+    FILE *fpt = fopen(configScriptPath, "w");
+    if(!fpt) {
+        consoleLog(LOG_LEVEL_ERROR, "putConfig", "Failed to open %s in write-only mode, please try again..", configScriptPath);
         return 127;
     }
-    for(int i = 0; i < array; i++) {
-        // write the old content till we stumble upon the one we actually need!
-        if(i != arrayIndexOfVariable) fprintf(fptr, "%s\n", contentsOfConfig[i]);
-        // write the new content because we got into the correct index!
-        else {
-            fprintf(fptr, "%s=%d\n", variableName, variableValue);
-            found = true;
+    for(int i = 0; i < lineCount; i++) {
+        if(strncmp(lines[i], variableName, strlen(variableName)) == 0) {
+            fprintf(fpt, "%s=%d\n", variableName, variableValue);
+            didItGetChanged = true;
         }
-        free(contentsOfConfig[i]);
+        else fprintf(fpt, "%s", lines[i]);
     }
-    free(contentsOfConfig);
-    fclose(fptr);
-    // more verbose but it does the j*b. Returns 0 if set!
-    return (found) ? 0 : 1;
+    fclose(fpt);
+    return (didItGetChanged) ? 0 : 1;
 }
 
 bool isPackageInList(const char *packageName) {
@@ -92,12 +63,12 @@ bool addPackageToList(const char *packageName) {
     if(!packageFile) abort_instance("addPackageToList", "Failed to open the package lists file, please run this command again or report this issue to the devs.");
     if(!isPackageInList(packageName)) {
         fprintf(packageFile, "\n%s\n", packageName);
-        consoleLog(LOG_LEVEL_DEBUG, "addPackageToList", "Successfully added %s into the list, the daemon will add the packages to the list for a short period of time.");
+        consoleLog(LOG_LEVEL_DEBUG, "addPackageToList", "Successfully added %s into the list, the daemon will add the packages to the list for a short period of time.", packageName);
         fclose(packageFile);
         return true;
     }
     else {
-        consoleLog(LOG_LEVEL_DEBUG, "addPackageToList", "%s is already present in the lists, please try again with a different application.");
+        consoleLog(LOG_LEVEL_DEBUG, "addPackageToList", "%s is already present in the lists, please try again with a different application.", packageName);
         fclose(packageFile);
         return false;
     }
@@ -154,10 +125,10 @@ bool executeShellCommands(const char *command, const char *args[]) {
             dup2(devNull, STDERR_FILENO);
             close(devNull);
             execvp(command, (char *const *)args);
-            consoleLog(LOG_LEVEL_ERROR, "executeShellCommands", "Failed to execute command: %s", command);
+            consoleLog(LOG_LEVEL_ERROR, "executeShellCommands", "Failed to execute command");
         break;
         default:
-            consoleLog(LOG_LEVEL_DEBUG, "executeShellCommands", "Waiting for current %d to finish, exec bin name: %s", ProcessID, command);
+            consoleLog(LOG_LEVEL_DEBUG, "executeShellCommands", "Waiting for current %d to finish", ProcessID);
             int status;
             wait(&status);
             return (WIFEXITED(status)) ? WEXITSTATUS(status) : false;
@@ -207,7 +178,7 @@ char *grepProp(const char *variableName, const char *propFile) {
 }
 
 char *getCurrentPackage() {
-    static char packageName[8000];
+    static char packageName[100];
     FILE *fptr = popen("timeout 1 dumpsys 2>/dev/null | grep mFocused | awk '{print $3}' | head -n 1 | awk -F'/' '{print $1}'", "r");
     if(!fptr) abort_instance("getCurrentPackage", "Failed to fetch shell output. Are you running on Android shell?");
     while(fgets(packageName, sizeof(packageName), fptr) != NULL) {
@@ -304,10 +275,6 @@ void abort_instance(const char *service, const char *format, ...) {
     va_start(args, format);
     consoleLog(LOG_LEVEL_ABORT, "%s", "%s %s", service, format, args);
     va_end(args);
-    freePointer((void **)&MODPATH);
-    freePointer((void **)&hostsBackupPath);
-    freePointer((void **)&hostsPath);
-    freePointer((void **)&configScriptPath);
     exit(EXIT_FAILURE);
 }
 
@@ -366,10 +333,8 @@ void printBannerWithRandomFontStyle() {
         
     // OK
     const char *banners[] = {banner1, banner2, banner3, banner4, banner5, banner6};
-    int totalBanners = sizeof(banners) / sizeof(banners[0]);
     srand((unsigned int)time(NULL));
-    int index = rand() % totalBanners;
-    printf("%s\n", banners[index]);
+    printf("%s\n", banners[rand() % sizeof(banners) / sizeof(banners[0])]);
 }
 
 void pauseADBlock() {
@@ -390,9 +355,8 @@ void pauseADBlock() {
     fprintf(hostsFile, "127.0.0.1 localhost\n::1 localhost\n");
     fclose(hostsFile);
     chmod(hostsPath, 0644);
-    putConfig("adblockSwitch", 1);
+    putConfig("adblock_switch", 1);
     refreshBlockedCounts();
-    finishMessage("Protection services have been paused. You can resume it by running Shizuka with the --adblock-switch option.");
     reWriteModuleProp("Status: Protection is temporarily disabled due to the daemon toggling the module for an app ❌");
 }
 
@@ -415,13 +379,17 @@ void resumeADBlock() {
         remove(hostsBackupPath);
         executeShellCommands("sync", (const char *[]){"sync", NULL});
         refreshBlockedCounts();
-        putConfig("adblockSwitch", 0);
+        putConfig("adblock_switch", 0);
         consoleLog(LOG_LEVEL_DEBUG, "resumeADBlock", "Protection services have been resumed.");
     }
     else {
         consoleLog(LOG_LEVEL_DEBUG, "resumeADBlock", "No backup hosts file found to resume, force resuming protection and running hosts update as a fallback action");
-        putConfig("adblockSwitch", 0);
-        system("/data/adb/modules/Re-Malwack/bin/rmlwk.sh --update-hosts");
+        putConfig("adblock_switch", 0);
+        // i've come to the conclusion that i should have an boolean for this action
+        // to stop running --update-hosts everytime.
+        if(!shouldForceReMalwackUpdate) {
+            if(executeShellCommands("/data/adb/modules/Re-Malwack/rmlwk.sh", (char * const []) {"/data/adb/modules/Re-Malwack/rmlwk.sh", "--update-hosts"}) == 0) shouldForceReMalwackUpdate = true;
+        }
     }
 }
 
@@ -464,10 +432,6 @@ void finishMessage(const char *message, ...) {
     vfprintf(out, message, args);
     if(!toFile) fprintf(out, "\033[0m\n");
     else fprintf(out, "\n");
-    freePointer((void **)&MODPATH);
-    freePointer((void **)&hostsBackupPath);
-    freePointer((void **)&hostsPath);
-    freePointer((void **)&configScriptPath);
     va_end(args);
     exit(EXIT_SUCCESS);
 }

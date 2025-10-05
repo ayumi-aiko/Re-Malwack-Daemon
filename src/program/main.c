@@ -20,14 +20,14 @@
 int blockedMod = 0;
 int blockedSys = 0;
 bool useStdoutForAllLogs = true;
-bool suppressEverythingExceptInfo = false;
-char *configScriptPath = NULL;
-char *MODPATH = NULL;
-char *modulePropFile = NULL;
+bool shouldForceReMalwackUpdate = false;
 char *version = NULL;
 char *versionCode = NULL;
-char *hostsPath = NULL;
-char *hostsBackupPath = NULL;
+const char *configScriptPath = "/data/adb/Re-Malwack/config.sh";
+const char *MODPATH = "/data/adb/modules/Re-Malwack";
+const char *modulePropFile = "/data/adb/modules/Re-Malwack/module.prop";
+const char *hostsPath = "/data/adb/modules/Re-Malwack/system/etc/hosts";
+const char *hostsBackupPath = "/data/adb/modules/Re-Malwack/hosts.bak";
 const char *daemonLogs = "/sdcard/Android/data/ishimi.katamari/logs.katamari.log";
 const char *persistDir = "/data/adb/Re-Malwack";
 const char *daemonPackageLists = "/data/adb/Re-Malwack/remalwack-package-lists.txt";
@@ -37,7 +37,7 @@ const char *daemonLockFileFailure = "/data/adb/Re-Malwack/.daemon2";
 const char *systemHostsPath = "/system/etc/hosts";
 const char *currentDaemonPIDFile = "/data/adb/Shizuka/currentDaemonPID";
 
-int main(int argc, const char *argv[]) {    
+int main(int argc, const char *argv[]) {
     printBannerWithRandomFontStyle();
     if(getuid()) abort_instance("main-katana", "- This binary should be running as root.");
 

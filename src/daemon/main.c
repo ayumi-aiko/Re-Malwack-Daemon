@@ -19,14 +19,15 @@
 // vars:
 int blockedMod = 0;
 int blockedSys = 0;
-bool useStdoutForAllLogs = false;
-char *configScriptPath = NULL;
-char *MODPATH = NULL;
-char *modulePropFile = NULL;
+bool useStdoutForAllLogs = true;
+bool shouldForceReMalwackUpdate = false;
 char *version = NULL;
 char *versionCode = NULL;
-char *hostsPath = NULL;
-char *hostsBackupPath = NULL;
+const char *configScriptPath = "/data/adb/Re-Malwack/config.sh";
+const char *MODPATH = "/data/adb/modules/Re-Malwack";
+const char *modulePropFile = "/data/adb/modules/Re-Malwack/module.prop";
+const char *hostsPath = "/data/adb/modules/Re-Malwack/system/etc/hosts";
+const char *hostsBackupPath = "/data/adb/modules/Re-Malwack/hosts.bak";
 const char *daemonLogs = "/sdcard/Android/data/ishimi.katamari/logs.katamari.log";
 const char *persistDir = "/data/adb/Re-Malwack";
 const char *daemonPackageLists = "/data/adb/Re-Malwack/remalwack-package-lists.txt";
@@ -38,14 +39,6 @@ const char *systemHostsPath = "/system/etc/hosts";
 const char *currentDaemonPIDFile = "/data/adb/Shizuka/currentDaemonPID";
 
 int main(int argc, const char *argv[]) {
-    // module path
-    MODPATH = strdup(modulePath(argv[0]));
-    if(!MODPATH) abort_instance("main-daemon", "Failed to retrieve module path");
-
-    // module prop file:
-    modulePropFile = combineStringsFormatted("%s/module.prop", MODPATH);
-    if(!modulePropFile) abort_instance("main-daemon", "Failed to retrieve module.prop path");
-
     // version:
     version = grepProp("version", modulePropFile);
     if(!version) abort_instance("main-daemon", "Could not find 'version' in module.prop");
@@ -54,25 +47,12 @@ int main(int argc, const char *argv[]) {
     versionCode = grepProp("versionCode", modulePropFile);
     if(!versionCode) abort_instance("main-daemon", "Could not find 'versionCode' in module.prop");
 
-    // hosts temp backup file
-    hostsBackupPath = combineStringsFormatted("%s/hosts.bak", MODPATH);
-    if(!hostsBackupPath) abort_instance("main-daemon", "Failed to retrieve hosts backup file path");
-
-    // hosts file
-    hostsPath = combineStringsFormatted("%s/system/etc/hosts", MODPATH);
-    if(!hostsPath) abort_instance("main-daemon", "Failed to retrieve hosts file path");
-
-    // config file
-    configScriptPath = combineStringsFormatted("%s/scripts/config.sh", MODPATH);
-    if(!configScriptPath) abort_instance("main-daemon", "Failed to retrieve config script path");
-
     // loop daemon action.
-    consoleLog(LOG_LEVEL_INFO, "main-daemon", "Re-Malwack v%s (versionCode: %s) is starting...", version, versionCode);
+    consoleLog(LOG_LEVEL_INFO, "main-daemon", "Re-Malwack %s (versionCode: %s) is starting...", version, versionCode);
     printBannerWithRandomFontStyle();
     if(getuid()) abort_instance("main-daemon", "daemon is not running as root.");
     // force stop termux instance if it's found to be in top. Just to be sure that 
-    // termux won't handle the loop.
-    // termux can't run some basic commands, that's why im stopping termux users.
+    // termux should't handle the loop and it can't run some basic commands, that's why im stopping termux users.
     if(getCurrentPackage() != NULL && strcmp(getCurrentPackage(), "com.termux") == 0) {
         consoleLog(LOG_LEVEL_WARN, "main-daemon", "Sorry dear termux user, you CANNOT run this daemon in termux. Termux is not supported by Re-Malwack Daemon.");
         executeShellCommands("exit", (const char*[]) { "exit", "1", NULL });
@@ -88,7 +68,8 @@ int main(int argc, const char *argv[]) {
     int i = 0;
     char packageArray[MAX_PACKAGES][PACKAGE_NAME_SIZE];
     char stringsToFetch[PACKAGE_NAME_SIZE];
-    while(fgets(stringsToFetch, sizeof(stringsToFetch), packageLists) != NULL && i < MAX_PACKAGES) {
+    while(fgets(stringsToFetch, sizeof(stringsToFetch), packageLists) && i < MAX_PACKAGES) {
+        if(strcspn(stringsToFetch, "\n") == 0) continue;
         stringsToFetch[strcspn(stringsToFetch, "\n")] = 0;
         strncpy(packageArray[i], stringsToFetch, PACKAGE_NAME_SIZE - 1);
         packageArray[i][PACKAGE_NAME_SIZE - 1] = '\0';
@@ -152,16 +133,8 @@ int main(int argc, const char *argv[]) {
         }
         else {
             // kill ourselves!
-            freePointer((void **)&MODPATH);
-            freePointer((void **)&hostsBackupPath);
-            freePointer((void **)&hostsPath);
-            freePointer((void **)&configScriptPath);
             exit(EXIT_SUCCESS);
         }
     }
-    freePointer((void **)&MODPATH);
-    freePointer((void **)&hostsBackupPath);
-    freePointer((void **)&hostsPath);
-    freePointer((void **)&configScriptPath);
     return 0;
 }
