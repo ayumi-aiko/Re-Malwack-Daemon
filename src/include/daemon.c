@@ -58,20 +58,14 @@ bool isPackageInList(const char *packageName) {
     return false;
 }
 
-bool addPackageToList(const char *packageName) {
+bool addPackageToList(char *packageName) {
     FILE *packageFile = fopen(daemonPackageLists, "a");
     if(!packageFile) abort_instance("addPackageToList", "Failed to open the package lists file, please run this command again or report this issue to the devs.");
-    if(!isPackageInList(packageName)) {
-        fprintf(packageFile, "\n%s\n", packageName);
-        consoleLog(LOG_LEVEL_DEBUG, "addPackageToList", "Successfully added %s into the list, the daemon will add the packages to the list for a short period of time.", packageName);
-        fclose(packageFile);
-        return true;
-    }
-    else {
-        consoleLog(LOG_LEVEL_DEBUG, "addPackageToList", "%s is already present in the lists, please try again with a different application.", packageName);
-        fclose(packageFile);
-        return false;
-    }
+    packageName[strcspn(packageName, "\n")] = 0;
+    fprintf(packageFile, "\n%s\n", packageName);
+    consoleLog(LOG_LEVEL_DEBUG, "addPackageToList", "Successfully added %s into the list, the daemon will add the packages to the list for a short period of time.", packageName);
+    fclose(packageFile);
+    return true;
 }
 
 bool removePackageFromList(const char *packageName) {
@@ -151,6 +145,13 @@ bool isDefaultHosts(const char *filename) {
         }
     }
     fclose(file);
+    return false;
+}
+
+bool canDaemonRun(void) {
+    char *enableDaemon = grepProp("enable_daemon", configScriptPath);
+    char *isDaemonRunning = grepProp("is_daemon_running", configScriptPath);
+    if(enableDaemon && isDaemonRunning && strcmp(enableDaemon, "1") + strcmp(isDaemonRunning, "1") == 0) return true;
     return false;
 }
 
@@ -388,7 +389,7 @@ void resumeADBlock() {
         // i've come to the conclusion that i should have an boolean for this action
         // to stop running --update-hosts everytime.
         if(!shouldForceReMalwackUpdate) {
-            if(executeShellCommands("/data/adb/modules/Re-Malwack/rmlwk.sh", (char * const []) {"/data/adb/modules/Re-Malwack/rmlwk.sh", "--update-hosts"}) == 0) shouldForceReMalwackUpdate = true;
+            if(executeShellCommands("/data/adb/modules/Re-Malwack/rmlwk.sh", (const char *[]) {"/data/adb/modules/Re-Malwack/rmlwk.sh", "--update-hosts"}) == 0) shouldForceReMalwackUpdate = true;
         }
     }
 }
@@ -397,7 +398,7 @@ void help(const char *wehgcfbkfbjhyghxdrbtrcdfv) {
     printf("Usage:\n");
     printf("  %s [OPTION] [ARGUMENTS]\n\n", wehgcfbkfbjhyghxdrbtrcdfv);
     printf("Options:\n");
-    printf("  --add-app <app_name>\t\tAdd an application to the list to stop ad blocker when the app is opened.\n");
+    printf("-a  --add-app <app_name>\t\tAdd an application to the list to stop ad blocker when the app is opened.\n");
     printf("  --remove-app <app_name>\tRemove an application from the list.\n");
     printf("  --export-package-list <file>\tExport the encoded app list to a path for restoration.\n");
     printf("  --import-package-list <file>\tImport the app list from the already exported file.\n");
@@ -479,9 +480,7 @@ void reWriteModuleProp(const char *desk) {
     fclose(moduleProp);
 }
 
-void writeCurrentProcessID(void) {
-    FILE *writePID = fopen(currentDaemonPIDFile, "w");
-    if(!writePID) abort_instance("main-daemon", "Failed to write current PID for the manager application, please run this daemon again!");
-    fprintf(writePID, "%d", getpid());
-    fclose(writePID);
+// 1 = stopped, 0 = running.
+void killDaemonWhenSignaled(int sig) {
+    putConfig("is_daemon_running", 1);
 }

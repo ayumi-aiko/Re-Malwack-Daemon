@@ -19,7 +19,7 @@
 // vars:
 int blockedMod = 0;
 int blockedSys = 0;
-bool useStdoutForAllLogs = true;
+bool useStdoutForAllLogs = false;
 bool shouldForceReMalwackUpdate = false;
 char *version = NULL;
 char *versionCode = NULL;
@@ -38,16 +38,11 @@ const char *daemonLockFileFailure = "/data/adb/Re-Malwack/.daemon2";
 const char *systemHostsPath = "/system/etc/hosts";
 const char *currentDaemonPIDFile = "/data/adb/Shizuka/currentDaemonPID";
 
-int main(int argc, const char *argv[]) {
-    // version:
+int main(int argc, char *argv[]) {
     version = grepProp("version", modulePropFile);
     if(!version) abort_instance("main-daemon", "Could not find 'version' in module.prop");
-
-    // version:
     versionCode = grepProp("versionCode", modulePropFile);
     if(!versionCode) abort_instance("main-daemon", "Could not find 'versionCode' in module.prop");
-
-    // loop daemon action.
     consoleLog(LOG_LEVEL_INFO, "main-daemon", "Re-Malwack %s (versionCode: %s) is starting...", version, versionCode);
     printBannerWithRandomFontStyle();
     if(getuid()) abort_instance("main-daemon", "daemon is not running as root.");
@@ -59,9 +54,7 @@ int main(int argc, const char *argv[]) {
     }
     // always have a backup of the daemonPackageLists because we need to have to use this
     // backup as a failsafe method when the crp didn't import properly.
-    if(executeShellCommands("su", (const char*[]) {"su", "-c", "cp", "-af", daemonPackageLists, "/data/adb/Re-Malwack/previousDaemonList", NULL}) != 0) {
-        abort_instance("main-daemon", "Failed to backup the daemon package lists, please try again!");
-    }
+    if(executeShellCommands("su", (const char*[]) {"su", "-c", "cp", "-af", daemonPackageLists, "/data/adb/Re-Malwack/previousDaemonList", NULL}) != 0) abort_instance("main-daemon", "Failed to backup the daemon package lists, please try again!");
     consoleLog(LOG_LEVEL_INFO, "main-daemon", "Reading encoded package list...");
     FILE *packageLists = fopen(daemonPackageLists, "rb");
     if(!packageLists) abort_instance("main-daemon", "Failed to open package list file.");
@@ -78,10 +71,15 @@ int main(int argc, const char *argv[]) {
     fclose(packageLists);
     consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Loaded %d packages into blocklist", i);
     consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Entering blocklist monitoring loop...");
-    while(1) {
-        // write the pid so we can kill it later inside the app.
-        writeCurrentProcessID();
-        if(strcmp(grepProp("enableDaemon", configScriptPath), "1") == 0) {
+    while(canDaemonRun()) {
+        // set signal actions.
+        signal(SIGINT, killDaemonWhenSignaled);
+        signal(SIGTERM, killDaemonWhenSignaled);
+        signal(SIGKILL, killDaemonWhenSignaled);
+        signal(SIGPWR, killDaemonWhenSignaled);
+        // set the prop to 0 to indicate that we are running already.
+        putConfig("is_daemon_running", 0);
+        if(strcmp(grepProp("enable_daemon", configScriptPath), "1") == 0) {
             if(access(daemonLockFileStuck, F_OK) == 0) {
                 consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Waiting for user configurations to finish...");
                 usleep(500000);

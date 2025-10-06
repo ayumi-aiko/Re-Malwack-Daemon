@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <libgen.h>
+#include <signal.h>
 
 // vars
 extern int blockedMod;
@@ -63,10 +64,11 @@ enum elogLevel {
 int putConfig(const char *__variableName, const int __variableValue);
 bool isPackageInList(const char *packageName);
 bool removePackageFromList(const char *packageName);
-bool addPackageToList(const char *packageName);
+bool addPackageToList(char *packageName);
 bool eraseFile(const char *__file);
 bool executeShellCommands(const char *command, const char *args[]);
 bool isDefaultHosts(const char *filename);
+bool canDaemonRun(void);
 char *grepProp(const char *variableName, const char *propFile);
 char *combineStringsFormatted(const char *format, ...);
 char *getCurrentPackage();
@@ -81,4 +83,4 @@ void freePointer(void **ptr);
 void finishMessage(const char *message, ...);
 void refreshBlockedCounts();
 void reWriteModuleProp(const char *desk);
-void writeCurrentProcessID(void);
+void killDaemonWhenSignaled(int sig);

@@ -76,16 +76,8 @@ katana: checkCompilerExistance banner
 	}
 	@echo "\e[0;36mmake: Info: Build finished without errors, be sure to check logs if concerned. Thank you!\e[0;37m"
 
-daemonStarter: checkCompilerExistance banner
-	@echo "\e[0;35mmake: Info: Trying to build daemonStarter..\e[0;37m"
-	@$(CC) $(CFLAGS) ./src/daemon/daemonStarter.c -o $(OUTPUT_DIR)/daemonStarter 2>./$(BUILD_LOGFILE) || { \
-		printf "\033[0;31mmake: Error: Build failure, check the logs for information. File can be found at $(BUILD_LOGFILE)\033[0m\n"; \
-		exit 1; \
-	}
-	@echo "\e[0;36mmake: Info: Build finished without errors, be sure to check logs if concerned. Thank you!\e[0;37m"
-
 # builds all:
-all: daemon katana daemonStarter
+all: daemon katana
 
 # prints the banner of the program.
 banner:
@@ -108,7 +100,6 @@ help:
 	@echo "\033[1;36mTargets:\033[0m"
 	@echo "  \033[0;32mdaemon\033[0m     Build the Re-Malwack daemon binary"
 	@echo "  \033[0;32mkatana\033[0m     Build the Re-Malwack daemon manager"
-	@echo "  \033[0;32mdaemonStarter\033[0m     Build the Re-Malwack's daemon starter"
 	@echo "  \033[0;32mclean\033[0m      Remove build artifacts"
 	@echo "  \033[0;32mhelp\033[0m       Show this help message"
 	@echo ""
@@ -117,7 +108,7 @@ help:
 
 # removes the stuff made by compiler and makefile.
 clean:
-	@rm -f $(BUILD_LOGFILE) $(OUTPUT_DIR)/remalwack-daemon $(OUTPUT_DIR)/remalwack-katana $(OUTPUT_DIR)/daemonStarter
+	@rm -f $(BUILD_LOGFILE) $(OUTPUT_DIR)/remalwack-daemon $(OUTPUT_DIR)/remalwack-katana
 	@echo "\033[0;32mmake: Info: Clean complete.\033[0m"
 
-.PHONY: daemon katana clean checkArgs checkCompilerExistance banner all daemonStarter
+.PHONY: daemon katana clean checkArgs checkCompilerExistance banner all

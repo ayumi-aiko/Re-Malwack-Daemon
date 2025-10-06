@@ -1,7 +1,6 @@
 ![rmwlk](https://github.com/ZG089/Re-Malwack/raw/main/assets/Re-Malwack.png)
 # Re-Malwack Daemon
 An unofficial daemon program written in C for app-specific adblocking feature.
-- This app now has GUI version! Checkout [Katana](https://github.com/ayumi-aiko/Katana)!
 - This CLI version will never get deprecated because the android app depends on the CLI code.
 
 ## To build:
@@ -19,7 +18,6 @@ make all SDK=28 ARCH=arm64
 - WSL or a Standard GNU/Linux with basic bash tools and make
 
 # katana
-- This program is now available in a GUI with [Katana](https://github.com/ayumi-aiko/Katana)
 - Katana is a program for managing the daemon in CLI.
 - Below are argument usage examples:
 ```
@@ -33,8 +31,5 @@ katana --import-package-list <path, ex: /sdcard/export-katana.txt> | For importi
 ```
 
 ## daemon
-- This app should only **RUN** in init or any prefered mode but not termux because termux is not suitable forever.
-- This app doesn't have any arguments handler because this app is only going to run in background. Arguments are managed by [Katana](https://github.com/ayumi-aiko/Katana).
-
-## daemonStarter
-- This program is used to start the daemon safely. Not used by CLI actions and only used in the [Katana](https://github.com/ayumi-aiko/Katana) app for starting the daemon.
+- This daemon should only **RUN** in init or any prefered mode but not termux because termux is not suitable forever.
+- This daemon doesn't have any arguments handler because this app is only going to run in background.
