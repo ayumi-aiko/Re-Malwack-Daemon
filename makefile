@@ -59,25 +59,25 @@ checkCompilerExistance: checkArgs
 	}
 
 # this builds the program after checking the existance of the clang or gcc compiler existance.
-daemon: checkCompilerExistance banner
+yuki: checkCompilerExistance banner
 	@echo "\e[0;35mmake: Info: Trying to build Re-Malwack daemon..\e[0;37m"
-	@$(CC) $(CFLAGS) -I$(INCLUDE) $(SRCS) $(TARGET) -o $(OUTPUT_DIR)/remalwack-daemon 2>./$(BUILD_LOGFILE) || { \
+	@$(CC) $(CFLAGS) -I$(INCLUDE) $(SRCS) $(TARGET) -o $(OUTPUT_DIR)/remalwack-yuki 2>./$(BUILD_LOGFILE) || { \
 		printf "\033[0;31mmake: Error: Build failure, check the logs for information. File can be found at $(BUILD_LOGFILE)\033[0m\n"; \
 		exit 1; \
 	}
 	@echo "\e[0;36mmake: Info: Build finished without errors, be sure to check logs if concerned. Thank you!\e[0;37m"
 
 # this builds the program after checking dependencies, this is for managing the daemon.
-katana: checkCompilerExistance banner
+alya: checkCompilerExistance banner
 	@echo "\e[0;35mmake: Info: Trying to build Re-Malwack daemon manager..\e[0;37m"
-	@$(CC) $(CFLAGS) -I$(INCLUDE) $(SRCS) ./src/program/main.c -o $(OUTPUT_DIR)/remalwack-katana 2>./$(BUILD_LOGFILE) || { \
+	@$(CC) $(CFLAGS) -I$(INCLUDE) $(SRCS) ./src/program/main.c -o $(OUTPUT_DIR)/remalwack-alya 2>./$(BUILD_LOGFILE) || { \
 		printf "\033[0;31mmake: Error: Build failure, check the logs for information. File can be found at $(BUILD_LOGFILE)\033[0m\n"; \
 		exit 1; \
 	}
 	@echo "\e[0;36mmake: Info: Build finished without errors, be sure to check logs if concerned. Thank you!\e[0;37m"
 
 # builds all:
-all: daemon katana
+all: clean yuki alya
 
 # prints the banner of the program.
 banner:
@@ -98,17 +98,17 @@ help:
 	@echo "\033[1;36mUsage:\033[0m make <target> [SDK=<level>] [ARCH=<arch>]"
 	@echo ""
 	@echo "\033[1;36mTargets:\033[0m"
-	@echo "  \033[0;32mdaemon\033[0m     Build the Re-Malwack daemon binary"
-	@echo "  \033[0;32mkatana\033[0m     Build the Re-Malwack daemon manager"
+	@echo "  \033[0;32myuki\033[0m     Build the Re-Malwack daemon binary"
+	@echo "  \033[0;32malya\033[0m     Build the Re-Malwack daemon manager"
 	@echo "  \033[0;32mclean\033[0m      Remove build artifacts"
 	@echo "  \033[0;32mhelp\033[0m       Show this help message"
 	@echo ""
 	@echo "\033[1;36mExample:\033[0m"
-	@echo "  make \033[0;32mdaemon\033[0m SDK=30 ARCH=arm64"
+	@echo "  make \033[0;32myuki\033[0m SDK=30 ARCH=arm64"
 
 # removes the stuff made by compiler and makefile.
 clean:
-	@rm -f $(BUILD_LOGFILE) $(OUTPUT_DIR)/remalwack-daemon $(OUTPUT_DIR)/remalwack-katana
+	@rm -f $(BUILD_LOGFILE) $(OUTPUT_DIR)/remalwack-yuki $(OUTPUT_DIR)/remalwack-alya
 	@echo "\033[0;32mmake: Info: Clean complete.\033[0m"
 
-.PHONY: daemon katana clean checkArgs checkCompilerExistance banner all
+.PHONY: yuki alya clean checkArgs checkCompilerExistance banner all

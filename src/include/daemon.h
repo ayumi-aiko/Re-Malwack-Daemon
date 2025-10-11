@@ -27,6 +27,7 @@
 #include <limits.h>
 #include <libgen.h>
 #include <signal.h>
+#include <ctype.h>
 
 // vars
 extern int blockedMod;
@@ -47,13 +48,20 @@ extern const char *daemonLockFileStuck;
 extern const char *daemonPackageLists;
 extern const char *daemonLockFileSuccess;
 extern const char *systemHostsPath;
-extern const char *currentDaemonPIDFile;
 enum elogLevel {
     LOG_LEVEL_INFO,
     LOG_LEVEL_WARN,
     LOG_LEVEL_DEBUG,
     LOG_LEVEL_ERROR,
     LOG_LEVEL_ABORT
+};
+enum daemonProcessState {
+    RUNNING_RUNABLE,
+    NOT_RUNNING_CANT_RUN
+};
+enum daemonState {
+    ENABLE_ENABLED,
+    DISABLE_DISABLED
 };
 
 // macros:
@@ -64,7 +72,7 @@ enum elogLevel {
 int putConfig(const char *__variableName, const int __variableValue);
 bool isPackageInList(const char *packageName);
 bool removePackageFromList(const char *packageName);
-bool addPackageToList(char *packageName);
+bool addPackageToList(const char *packageName);
 bool eraseFile(const char *__file);
 bool executeShellCommands(const char *command, const char *args[]);
 bool isDefaultHosts(const char *filename);

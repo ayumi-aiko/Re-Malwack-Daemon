@@ -17,19 +17,23 @@ make all SDK=28 ARCH=arm64
 - Android NDK, atleast `r27d` is required
 - WSL or a Standard GNU/Linux with basic bash tools and make
 
-# katana
-- Katana is a program for managing the daemon in CLI.
+# Alya
+- Alya is a program for managing the daemon in CLI.
 - Below are argument usage examples:
 ```
-katana --add-app <app package name, ex: com.android.conan> | Adds the app from the blocklist
+alya --add-app <app package name, ex: com.android.conan> | Adds the app from the blocklist
 
-katana --remove-app <app package name, ex: com.android.conan> | Removes the app from the blocklist
+alya --remove-app <app package name, ex: com.android.conan> | Removes the app from the blocklist
 
-katana --export-package-list <path, ex: /sdcard/export-katana.txt> | For exporting the package lists
+alya --export-package-list <path, ex: /sdcard/export-alya.txt> | For exporting the package lists
 
-katana --import-package-list <path, ex: /sdcard/export-katana.txt> | For importing the package lists
+alya --import-package-list <path, ex: /sdcard/export-alya.txt> | For importing the package lists
+
+alya --enable-daemon | Enables the "yuki" program to work.
+
+alya --disable-daemon | Enables the "yuki" program to work.
 ```
 
-## daemon
+## Yuki
 - This daemon should only **RUN** in init or any prefered mode but not termux because termux is not suitable forever.
-- This daemon doesn't have any arguments handler because this app is only going to run in background.
+- This daemon doesn't have any arguments handler because this app is only going to run in background to monitor apps.

@@ -47,7 +47,7 @@ bool isPackageInList(const char *packageName) {
     FILE *packageFile = fopen(daemonPackageLists, "r");
     if(!packageFile) abort_instance("isPackageInList", "Failed to open the package lists file, please run this command again or report this issue to the devs.");
     char contentFromFile[1028];
-    while(fgets(contentFromFile, sizeof(contentFromFile), packageFile) != NULL) {
+    while(fgets(contentFromFile, sizeof(contentFromFile), packageFile)) {
         contentFromFile[strcspn(contentFromFile, "\n")] = 0;
         if(strcmp(contentFromFile, packageName) == 0) {
             fclose(packageFile);
@@ -58,12 +58,11 @@ bool isPackageInList(const char *packageName) {
     return false;
 }
 
-bool addPackageToList(char *packageName) {
+bool addPackageToList(const char *packageName) {
     FILE *packageFile = fopen(daemonPackageLists, "a");
     if(!packageFile) abort_instance("addPackageToList", "Failed to open the package lists file, please run this command again or report this issue to the devs.");
-    packageName[strcspn(packageName, "\n")] = 0;
     fprintf(packageFile, "\n%s\n", packageName);
-    consoleLog(LOG_LEVEL_DEBUG, "addPackageToList", "Successfully added %s into the list, the daemon will add the packages to the list for a short period of time.", packageName);
+    consoleLog(LOG_LEVEL_DEBUG, "addPackageToList", "Successfully added %s into the list, the daemon will add the packages to the list after a short period of time.", packageName);
     fclose(packageFile);
     return true;
 }
@@ -81,7 +80,7 @@ bool removePackageFromList(const char *packageName) {
         eraseFile(daemonLockFileStuck);
         contentFromFile[strcspn(contentFromFile, "\n")] = 0;
         if(strcmp(contentFromFile, packageName) == 0) {
-            consoleLog(LOG_LEVEL_DEBUG, "removePackageFromList", "Found %s on the list, removing the package from the list...");
+            consoleLog(LOG_LEVEL_DEBUG, "removePackageFromList", "Found %s on the list, removing the package from the list...", packageName);
             // skip writing to the temp file so we can write other strings aka the packages.
             // use a bool to indicate that we skipped copying it to the temp file.
             status = true;
@@ -151,7 +150,7 @@ bool isDefaultHosts(const char *filename) {
 bool canDaemonRun(void) {
     char *enableDaemon = grepProp("enable_daemon", configScriptPath);
     char *isDaemonRunning = grepProp("is_daemon_running", configScriptPath);
-    if(enableDaemon && isDaemonRunning && strcmp(enableDaemon, "1") + strcmp(isDaemonRunning, "1") == 0) return true;
+    if(enableDaemon && isDaemonRunning && strcmp(enableDaemon, "0") + strcmp(isDaemonRunning, "1") == 0) return true;
     return false;
 }
 
@@ -398,16 +397,20 @@ void help(const char *wehgcfbkfbjhyghxdrbtrcdfv) {
     printf("Usage:\n");
     printf("  %s [OPTION] [ARGUMENTS]\n\n", wehgcfbkfbjhyghxdrbtrcdfv);
     printf("Options:\n");
-    printf("-a  --add-app <app_name>\t\tAdd an application to the list to stop ad blocker when the app is opened.\n");
-    printf("  --remove-app <app_name>\tRemove an application from the list.\n");
-    printf("  --export-package-list <file>\tExport the encoded app list to a path for restoration.\n");
-    printf("  --import-package-list <file>\tImport the app list from the already exported file.\n");
-    printf("  --help\t\t\tDisplay this help message.\n\n");
+    printf("-a  |  --add-app <app_name>\t\tAdd an application to the list to stop ad blocker when the app is opened.\n");
+    printf("-r  |  --remove-app <app_name>\tRemove an application from the list.\n");
+    printf("-i  |  --import-package-list <file>\tImport the app list from the already exported file.\n");
+    printf("-e  |  --export-package-list <file>\tExport the encoded app list to a path for restoration.\n");
+    printf("-x  |  --enable-daemon\tEnables \n");
+    printf("-d  |  --disable-daemon\n");
+    printf("     --help\t\t\tDisplay this help message.\n\n");
     printf("Examples:\n");
     printf("  %s --add-app com.example.myapp\n", wehgcfbkfbjhyghxdrbtrcdfv);
     printf("  %s --remove-app com.example.myapp\n", wehgcfbkfbjhyghxdrbtrcdfv);
     printf("  %s --export-package-list apps.txt\n", wehgcfbkfbjhyghxdrbtrcdfv);
     printf("  %s --import-package-list apps.txt\n", wehgcfbkfbjhyghxdrbtrcdfv);
+    printf("  %s --enable-daemon\n", wehgcfbkfbjhyghxdrbtrcdfv);
+    printf("  %s --disable-daemon\n", wehgcfbkfbjhyghxdrbtrcdfv);
 }
 
 void freePointer(void **ptr) {
@@ -480,7 +483,6 @@ void reWriteModuleProp(const char *desk) {
     fclose(moduleProp);
 }
 
-// 1 = stopped, 0 = running.
 void killDaemonWhenSignaled(int sig) {
-    putConfig("is_daemon_running", 1);
+    putConfig("is_daemon_running", NOT_RUNNING_CANT_RUN);
 }

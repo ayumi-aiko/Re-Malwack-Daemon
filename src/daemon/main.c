@@ -28,7 +28,7 @@ const char *MODPATH = "/data/adb/modules/Re-Malwack";
 const char *modulePropFile = "/data/adb/modules/Re-Malwack/module.prop";
 const char *hostsPath = "/data/adb/modules/Re-Malwack/system/etc/hosts";
 const char *hostsBackupPath = "/data/adb/modules/Re-Malwack/hosts.bak";
-const char *daemonLogs = "/sdcard/Android/data/ishimi.katamari/logs.katamari.log";
+const char *daemonLogs = "/sdcard/Android/data/alya.roshidere.lana/logs.alya.log";
 const char *persistDir = "/data/adb/Re-Malwack";
 const char *daemonPackageLists = "/data/adb/Re-Malwack/remalwack-package-lists.txt";
 const char *previousDaemonPackageLists = "/data/adb/Re-Malwack/previousDaemonList";
@@ -36,7 +36,6 @@ const char *daemonLockFileStuck = "/data/adb/Re-Malwack/.daemon0";
 const char *daemonLockFileSuccess = "/data/adb/Re-Malwack/.daemon1";
 const char *daemonLockFileFailure = "/data/adb/Re-Malwack/.daemon2";
 const char *systemHostsPath = "/system/etc/hosts";
-const char *currentDaemonPIDFile = "/data/adb/Shizuka/currentDaemonPID";
 
 int main(int argc, char *argv[]) {
     version = grepProp("version", modulePropFile);
@@ -72,6 +71,8 @@ int main(int argc, char *argv[]) {
     consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Loaded %d packages into blocklist", i);
     consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "Entering blocklist monitoring loop...");
     while(canDaemonRun()) {
+        // put the pid of this daemon process.
+        putConfig("current_daemon_pid", getpid());
         // set signal actions.
         signal(SIGINT, killDaemonWhenSignaled);
         signal(SIGTERM, killDaemonWhenSignaled);
