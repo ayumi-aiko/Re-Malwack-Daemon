@@ -60,8 +60,8 @@ checkCompilerExistance: checkArgs
 
 # this builds the program after checking the existance of the clang or gcc compiler existance.
 yuki: checkCompilerExistance banner
-	@echo "\e[0;35mmake: Info: Trying to build Re-Malwack daemon..\e[0;37m"
-	@$(CC) $(CFLAGS) -I$(INCLUDE) $(SRCS) $(TARGET) -o $(OUTPUT_DIR)/remalwack-yuki 2>./$(BUILD_LOGFILE) || { \
+	@echo "\e[0;35mmake: Info: Trying to build Yuki..\e[0;37m"
+	@$(CC) $(CFLAGS) -I$(INCLUDE) $(SRCS) $(TARGET) -o $(OUTPUT_DIR)/mitsuha-yuki 2>./$(BUILD_LOGFILE) || { \
 		printf "\033[0;31mmake: Error: Build failure, check the logs for information. File can be found at $(BUILD_LOGFILE)\033[0m\n"; \
 		exit 1; \
 	}
@@ -69,8 +69,8 @@ yuki: checkCompilerExistance banner
 
 # this builds the program after checking dependencies, this is for managing the daemon.
 alya: checkCompilerExistance banner
-	@echo "\e[0;35mmake: Info: Trying to build Re-Malwack daemon manager..\e[0;37m"
-	@$(CC) $(CFLAGS) -I$(INCLUDE) $(SRCS) ./src/alya/main.c -o $(OUTPUT_DIR)/remalwack-alya 2>./$(BUILD_LOGFILE) || { \
+	@echo "\e[0;35mmake: Info: Trying to build Alya..\e[0;37m"
+	@$(CC) $(CFLAGS) -I$(INCLUDE) $(SRCS) ./src/alya/main.c -o $(OUTPUT_DIR)/mitsuha-alya 2>./$(BUILD_LOGFILE) || { \
 		printf "\033[0;31mmake: Error: Build failure, check the logs for information. File can be found at $(BUILD_LOGFILE)\033[0m\n"; \
 		exit 1; \
 	}
@@ -98,8 +98,8 @@ help:
 	@echo "\033[1;36mUsage:\033[0m make <target> [SDK=<level>] [ARCH=<arch>]"
 	@echo ""
 	@echo "\033[1;36mTargets:\033[0m"
-	@echo "  \033[0;32myuki\033[0m     Build the Re-Malwack daemon binary"
-	@echo "  \033[0;32malya\033[0m     Build the Re-Malwack daemon manager"
+	@echo "  \033[0;32myuki\033[0m     Build the Mitsuha daemon binary"
+	@echo "  \033[0;32malya\033[0m     Build the Mitsuha daemon manager"
 	@echo "  \033[0;32mclean\033[0m      Remove build artifacts"
 	@echo "  \033[0;32mhelp\033[0m       Show this help message"
 	@echo ""
@@ -108,7 +108,7 @@ help:
 
 # removes the stuff made by compiler and makefile.
 clean:
-	@rm -f $(BUILD_LOGFILE) $(OUTPUT_DIR)/remalwack-yuki $(OUTPUT_DIR)/remalwack-alya
+	@rm -f $(BUILD_LOGFILE) $(OUTPUT_DIR)/mitsuha-yuki $(OUTPUT_DIR)/mitsuha-alya
 	@echo "\033[0;32mmake: Info: Clean complete.\033[0m"
 
 .PHONY: yuki alya clean checkArgs checkCompilerExistance banner all

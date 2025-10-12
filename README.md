@@ -1,7 +1,7 @@
-![rmwlk](https://github.com/ZG089/Re-Malwack/raw/main/assets/Re-Malwack.png)
-# Re-Malwack Daemon
-An unofficial daemon program written in C for app-specific adblocking feature.
-- This CLI version will never get deprecated because the android app depends on the CLI code.
+![rmwlk](https://github.com/ayumi-aiko/banners/raw/main/mitsuha.banner.png?raw=true)
+# Mitsuha
+An unofficial [Re-Malwack](https://github.com/ZG089/Re-Malwack) addon written in C for app-specific adblocking feature.
+- This CLI version will never get deprecated because the android app depends on the CLI code. GUI version can be downloaded from [Hoshiko](https://github.com/ayumi-aiko/Hoshiko) repository.
 
 ## To build:
 - Edit the `CC_ROOT` with your path to the ROOT of the android-ndk if you are building it for the first time.
@@ -39,5 +39,5 @@ alya --lana-app | -l: Sets the `useStdoutForAllLogs` to false to throw all outpu
 ```
 
 ## Yuki
-- This daemon should only **RUN** in init or any prefered mode but not termux because termux is not suitable forever.
+- This daemon should only **RUN** in init or any prefered mode but not termux because termux is not suitable.
 - This daemon doesn't have any arguments handler because this app is only going to run in background to monitor apps.
