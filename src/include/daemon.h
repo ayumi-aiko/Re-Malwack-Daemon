@@ -28,12 +28,13 @@
 #include <libgen.h>
 #include <signal.h>
 #include <ctype.h>
+#include <dirent.h>
 
 // vars
 extern int blockedMod;
 extern int blockedSys;
 extern bool useStdoutForAllLogs;
-extern bool shouldForceReMalwackUpdate;
+extern bool shouldNotForceReMalwackUpdateNextTime;
 extern char *version;
 extern char *versionCode;
 extern const char *MODPATH;
@@ -69,14 +70,16 @@ enum daemonState {
 #define PACKAGE_NAME_SIZE 256
 
 // functions:
-int putConfig(const char *__variableName, const int __variableValue);
+int putConfig(const char *variableName, const int variableValue);
+int putConfigAppend(const char *variableName, int variableValue, bool addVariable404);
 bool isPackageInList(const char *packageName);
 bool removePackageFromList(const char *packageName);
 bool addPackageToList(const char *packageName);
-bool eraseFile(const char *__file);
+bool eraseFile(const char *file);
 bool executeShellCommands(const char *command, const char *args[]);
 bool isDefaultHosts(const char *filename);
 bool canDaemonRun(void);
+bool copyTextFile(const char *src, const char *dest);
 char *grepProp(const char *variableName, const char *propFile);
 char *combineStringsFormatted(const char *format, ...);
 char *getCurrentPackage();
@@ -88,7 +91,8 @@ void pauseADBlock();
 void resumeADBlock();
 void help(const char *wehgcfbkfbjhyghxdrbtrcdfv);
 void freePointer(void **ptr);
-void finishMessage(const char *message, ...);
 void refreshBlockedCounts();
 void reWriteModuleProp(const char *desk);
 void killDaemonWhenSignaled(int sig);
+void checkIfModuleExists(void);
+void appendAlyaProps(void);

@@ -17,7 +17,7 @@ make all SDK=28 ARCH=arm64
 - Android NDK, atleast `r27d` is required
 - WSL or a Standard GNU/Linux with basic bash tools and make
 
-# Alya
+## Alya
 - Alya is a program for managing the daemon in CLI.
 - Below are argument usage examples:
 ```
@@ -31,7 +31,7 @@ alya --import-package-list <path, ex: /sdcard/export-alya.txt> | For importing t
 
 alya --enable-daemon | Enables the "yuki" program to work.
 
-alya --disable-daemon | Enables the "yuki" program to work.
+alya --disable-daemon | Disables the "yuki" program.
 ```
 
 ## Yuki

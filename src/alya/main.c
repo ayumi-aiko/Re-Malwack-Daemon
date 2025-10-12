@@ -20,8 +20,8 @@
 // vars:
 int blockedMod = 0;
 int blockedSys = 0;
-bool useStdoutForAllLogs = false;
-bool shouldForceReMalwackUpdate = false;
+bool useStdoutForAllLogs = true;
+bool shouldNotForceReMalwackUpdateNextTime = false;
 char *version = NULL;
 char *versionCode = NULL;
 const char *configScriptPath = "/data/adb/Re-Malwack/config.sh";
@@ -42,17 +42,20 @@ const char *systemHostsPath = "/system/etc/hosts";
 struct option longOptions[] = {
     {"help", no_argument, 0, 'h'},
     {"add-app", required_argument, 0, 'a'},
-    {"remove-app", no_argument, 0, 'r'},
-    {"import-package-list", no_argument, 0, 'i'},
-    {"export-package-list", no_argument, 0, 'e'},
+    {"remove-app", required_argument, 0, 'r'},
+    {"import-package-list", required_argument, 0, 'i'},
+    {"export-package-list", required_argument, 0, 'e'},
     {"enable-daemon", no_argument, 0, 'x'},
     {"disable-daemon", no_argument, 0, 'd'},
     {"is-yuki", required_argument, 0, 'y'},
+    {"lana-app", no_argument, 0, 'l'},
     {0,0,0,0}
 };
 
-int main(int argc, const char *argv[]) {
+int main(int argc, char *argv[]) {
     printBannerWithRandomFontStyle();
+    checkIfModuleExists();
+    appendAlyaProps();
     if(getuid()) abort_instance("main-roshidere", "This binary should be running as root.");
     int opt;
     int longindex = 0;
@@ -62,6 +65,9 @@ int main(int argc, const char *argv[]) {
             case 'h':
                 help(argv[0]);
             break;
+            case 'l':
+                useStdoutForAllLogs = false;
+            break;
             case 'a':
                 if(isPackageInList(optarg)) consoleLog(LOG_LEVEL_INFO, "main-roshidere", "Existing package can't be added once again!");
                 else addPackageToList(optarg);
@@ -70,37 +76,44 @@ int main(int argc, const char *argv[]) {
             case 'r':
                 if(isPackageInList(optarg)) {
                     removePackageFromList(optarg);
-                    finishMessage("Requested package has been removed successfully!");
+                    consoleLog(LOG_LEVEL_INFO, "main-roshidere", "Requested package has been removed successfully!");
                 }
                 else abort_instance("main-roshidere", "%s is not found in the list.", optarg);
             break;
             case 'i':
                 eraseFile(daemonLockFileStuck);
-                if(executeShellCommands("cp", (const char*[]) { "cp", "-af", optarg, daemonPackageLists, NULL })) {
+                if(access(optarg, F_OK) != 0) abort_instance("main-roshidere", "Failed to access the given import package lists file.");
+                if(copyTextFile(optarg, daemonPackageLists)) {
                     eraseFile(daemonLockFileSuccess);
                     remove(daemonLockFileStuck);
-                    finishMessage("main-roshidere", "Successfully imported the package list. Thank you for using Re-Malwack!");
+                    consoleLog(LOG_LEVEL_INFO, "main-roshidere", "Successfully imported the package list. Thank you for using Re-Malwack!");
+                    return 0;
                 }
                 else {
-                    abort_instance("main-roshidere", "Failed to import the package list. Please try again!");
                     eraseFile(daemonLockFileFailure);
+                    abort_instance("main-roshidere", "Failed to import the package list. Please try again!");
                 }
             break;
             case 'e':
                 if(access(daemonPackageLists, F_OK) != 0) abort_instance("main-roshidere", "Failed to access the package lists file. It might be corrupted or missing.");
-                if(executeShellCommands("cp", (const char*[]) { "cp", "-af", daemonPackageLists, optarg, NULL })) finishMessage("Successfully copied the file to the requested location. Thank you for using Re-Malwack!");
+                if(copyTextFile(daemonPackageLists, optarg)) {
+                    consoleLog(LOG_LEVEL_INFO, "main-roshidere", "Successfully copied the file to the requested location. Thank you for using Re-Malwack!");
+                    return 0;
+                }
                 else abort_instance("main-roshidere", "Failed to copy the file to the requested location. Please try again!");
             break;
             case 'x':
                 if(putConfig("enable_daemon", ENABLE_ENABLED) != 0) abort_instance("main-roshidere", "Failed to enable the daemon, please try again!");
-                finishMessage("main-roshidere", "Successfully enabled the daemon, enjoy!");
+                consoleLog(LOG_LEVEL_INFO, "main-roshidere", "Successfully enabled the daemon, enjoy!");
+                return 0;
             break;
             case 'd':
                 if(putConfig("enable_daemon", DISABLE_DISABLED) != 0) abort_instance("main-roshidere", "Failed to disable the daemon, please try again!");
-                finishMessage("main-roshidere", "Successfully enabled the daemon, enjoy!");
+                consoleLog(LOG_LEVEL_INFO, "main-roshidere", "Successfully enabled the daemon, enjoy!");
+                return 0;
             break;
             case 'y':
-                if(strcmp(optarg, "-r") == 0 || strcmp(optarg, "-R") == 0) {
+                if(strstr(optarg, "-r") == 0 || strstr(optarg, "-R") == 0) {
                     if(strcmp(grepProp("is_daemon_running", configScriptPath), "0") != 0) return 1;
                     return 0;
                 }

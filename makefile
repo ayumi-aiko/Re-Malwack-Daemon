@@ -20,7 +20,7 @@ CC_ROOT = /home/ayumi/android-ndk-r27d/toolchains/llvm/prebuilt/linux-x86_64/bin
 CFLAGS = -std=c23 -O3 -static
 INCLUDE = ./src/include
 SRCS = ./src/include/daemon.c
-TARGET = ./src/daemon/main.c
+TARGET = ./src/yuki/main.c
 BUILD_LOGFILE = ./build/logs/logs
 OUTPUT_DIR = ./build
 
@@ -70,7 +70,7 @@ yuki: checkCompilerExistance banner
 # this builds the program after checking dependencies, this is for managing the daemon.
 alya: checkCompilerExistance banner
 	@echo "\e[0;35mmake: Info: Trying to build Re-Malwack daemon manager..\e[0;37m"
-	@$(CC) $(CFLAGS) -I$(INCLUDE) $(SRCS) ./src/program/main.c -o $(OUTPUT_DIR)/remalwack-alya 2>./$(BUILD_LOGFILE) || { \
+	@$(CC) $(CFLAGS) -I$(INCLUDE) $(SRCS) ./src/alya/main.c -o $(OUTPUT_DIR)/remalwack-alya 2>./$(BUILD_LOGFILE) || { \
 		printf "\033[0;31mmake: Error: Build failure, check the logs for information. File can be found at $(BUILD_LOGFILE)\033[0m\n"; \
 		exit 1; \
 	}

@@ -17,15 +17,22 @@
 #include <daemon.h>
 
 int putConfig(const char *variableName, int variableValue) {
+    return putConfigAppend(variableName, variableValue, false);
+}
+
+int putConfigAppend(const char *variableName, int variableValue, bool addVariable404) {
     FILE *fp = fopen(configScriptPath, "r");
     if(!fp) {
         consoleLog(LOG_LEVEL_ERROR, "putConfig", "Failed to open %s in read-only mode, please try again..", configScriptPath);
         return 127;
     }
+    char lines[64][100];
     int lineCount = 0;
     bool didItGetChanged = false;
-    char lines[64][256];
-    while(fgets(lines[lineCount], sizeof(lines[lineCount]), fp)) lineCount++;
+    while(fgets(lines[lineCount], sizeof(lines[lineCount]), fp)) {
+        if(lineCount >= 100) break;
+        lineCount++;
+    }
     fclose(fp);
     FILE *fpt = fopen(configScriptPath, "w");
     if(!fpt) {
@@ -33,11 +40,16 @@ int putConfig(const char *variableName, int variableValue) {
         return 127;
     }
     for(int i = 0; i < lineCount; i++) {
-        if(strncmp(lines[i], variableName, strlen(variableName)) == 0) {
+        if(strncmp(lines[i], variableName, strlen(variableName)) == 0 && 
+            lines[i][strlen(variableName)] == '=') {
             fprintf(fpt, "%s=%d\n", variableName, variableValue);
             didItGetChanged = true;
         }
         else fprintf(fpt, "%s", lines[i]);
+    }
+    if(!didItGetChanged && addVariable404) {
+        fprintf(fpt, "%s=%d\n", variableName, variableValue);
+        didItGetChanged = true;
     }
     fclose(fpt);
     return (didItGetChanged) ? 0 : 1;
@@ -61,8 +73,8 @@ bool isPackageInList(const char *packageName) {
 bool addPackageToList(const char *packageName) {
     FILE *packageFile = fopen(daemonPackageLists, "a");
     if(!packageFile) abort_instance("addPackageToList", "Failed to open the package lists file, please run this command again or report this issue to the devs.");
-    fprintf(packageFile, "\n%s\n", packageName);
-    consoleLog(LOG_LEVEL_DEBUG, "addPackageToList", "Successfully added %s into the list, the daemon will add the packages to the list after a short period of time.", packageName);
+    fprintf(packageFile, "\n%s", packageName);
+    consoleLog(LOG_LEVEL_INFO, "addPackageToList", "Successfully added %s into the list, the daemon will add the packages to the list after a short period of time.", packageName);
     fclose(packageFile);
     return true;
 }
@@ -80,7 +92,7 @@ bool removePackageFromList(const char *packageName) {
         eraseFile(daemonLockFileStuck);
         contentFromFile[strcspn(contentFromFile, "\n")] = 0;
         if(strcmp(contentFromFile, packageName) == 0) {
-            consoleLog(LOG_LEVEL_DEBUG, "removePackageFromList", "Found %s on the list, removing the package from the list...", packageName);
+            consoleLog(LOG_LEVEL_INFO, "removePackageFromList", "Found %s on the list, removing the package from the list...", packageName);
             // skip writing to the temp file so we can write other strings aka the packages.
             // use a bool to indicate that we skipped copying it to the temp file.
             status = true;
@@ -97,8 +109,8 @@ bool removePackageFromList(const char *packageName) {
     return status;
 }
 
-bool eraseFile(const char *__file) {
-    FILE *fileConstantAgain = fopen(__file, "w");
+bool eraseFile(const char *file) {
+    FILE *fileConstantAgain = fopen(file, "w");
     if(!fileConstantAgain) return false;
     fclose(fileConstantAgain);
     return true;
@@ -152,6 +164,29 @@ bool canDaemonRun(void) {
     char *isDaemonRunning = grepProp("is_daemon_running", configScriptPath);
     if(enableDaemon && isDaemonRunning && strcmp(enableDaemon, "0") + strcmp(isDaemonRunning, "1") == 0) return true;
     return false;
+}
+
+bool copyTextFile(const char *src, const char *dest) {
+    FILE *source = fopen(src, "r");
+    FILE *destination = fopen(dest, "w");
+    if(!source) {
+        consoleLog(LOG_LEVEL_ERROR, "copyTextFile", "Failed to open the source file: %s, No such file or directory", src);
+        return false;
+    }
+    if(!destination) {
+        consoleLog(LOG_LEVEL_ERROR, "copyTextFile", "Failed to open the destination file: %s, No such file or directory", dest);
+        fclose(source);
+        return false;
+    }
+    char contentFromFile[1024][1000];
+    int lines = 0;
+    while(fgets(contentFromFile[lines], sizeof(contentFromFile[lines]), source)) {
+        fprintf(destination, "%s", contentFromFile[lines]);
+        lines++;
+    }
+    fclose(source);
+    fclose(destination);
+    return true;
 }
 
 char *grepProp(const char *variableName, const char *propFile) {
@@ -234,7 +269,7 @@ void consoleLog(enum elogLevel loglevel, const char *service, const char *messag
     bool toFile = false;
     if(useStdoutForAllLogs) {
         out = stdout;
-        if(loglevel == LOG_LEVEL_ERROR || loglevel == LOG_LEVEL_WARN || loglevel == LOG_LEVEL_DEBUG || loglevel == LOG_LEVEL_ABORT) out = stderr;
+        if(loglevel == LOG_LEVEL_ERROR || loglevel == LOG_LEVEL_WARN || loglevel == LOG_LEVEL_ABORT) out = stderr;
     }
     else {
         out = fopen(daemonLogs, "a");
@@ -244,14 +279,18 @@ void consoleLog(enum elogLevel loglevel, const char *service, const char *messag
     switch(loglevel) {
         case LOG_LEVEL_INFO:
             if(!toFile) fprintf(out, "\033[2;30;47mINFO: ");
-            else fprintf(out, "INFO: %s: ", service);
+            else fprintf(out, "%s: ", service);
         break;
         case LOG_LEVEL_WARN:
             if(!toFile) fprintf(out, "\033[1;33mWARNING: ");
             else fprintf(out, "WARNING: %s: ", service);
         break;
         case LOG_LEVEL_DEBUG:
-            if(!toFile) fprintf(out, "\033[0;36mDEBUG: ");
+            // skip dbg texts if we are going to put them in std{out,err}.
+            if(!toFile) {
+                va_end(args);
+                return;
+            }
             else fprintf(out, "DEBUG: %s: ", service);
         break;
         case LOG_LEVEL_ERROR:
@@ -273,7 +312,7 @@ void consoleLog(enum elogLevel loglevel, const char *service, const char *messag
 void abort_instance(const char *service, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    consoleLog(LOG_LEVEL_ABORT, "%s", "%s %s", service, format, args);
+    consoleLog(LOG_LEVEL_ABORT, service, format, args);
     va_end(args);
     exit(EXIT_FAILURE);
 }
@@ -338,10 +377,10 @@ void printBannerWithRandomFontStyle() {
 }
 
 void pauseADBlock() {
-    if(access(combineStringsFormatted("%s/hosts.bak", persistDir), F_OK) == 0) consoleLog(LOG_LEVEL_WARN, "pauseADBlock", "Protection is already paused!");
+    if(access(hostsBackupPath, F_OK) == 0) consoleLog(LOG_LEVEL_WARN, "pauseADBlock", "Protection is already paused!");
     refreshBlockedCounts(); // refresh it because both default val is set to 0
     if(blockedMod == 0 && blockedSys == 0) abort_instance("pauseADBlock", "You can't pause Re-Malwack while the hosts file is reset. Please reset the hosts file first.");
-    consoleLog(LOG_LEVEL_DEBUG, "pauseADBlock", "Trying to pause Re-Malwack's protection...");
+    consoleLog(LOG_LEVEL_INFO, "pauseADBlock", "Trying to pause Re-Malwack's protection...");
     FILE *backupHostsFile = fopen(hostsBackupPath, "w");
     if(!backupHostsFile) abort_instance("pauseADBlock", "Failed to open hosts backup file: %s", hostsBackupPath);
     FILE *hostsFile = fopen(hostsPath, "r+");
@@ -361,8 +400,8 @@ void pauseADBlock() {
 }
 
 void resumeADBlock() {
-    consoleLog(LOG_LEVEL_DEBUG, "resumeADBlock", "Trying to resume protection...");
-    if(access(combineStringsFormatted("%s/hosts.bak", persistDir), F_OK) == 0) {
+    consoleLog(LOG_LEVEL_INFO, "resumeADBlock", "Trying to resume protection...");
+    if(access(hostsBackupPath, F_OK) == 0) {
         reWriteModuleProp("Status: Protection is temporarily enabled due to the daemon toggling the module for an app ❌");
         FILE *backupHostsFile = fopen(hostsBackupPath, "r");
         if(!backupHostsFile) abort_instance("resumeADBlock", "Failed to open backup hosts file: %s\nDue to this failure, we are unable to restore previous backed-up hosts.", hostsBackupPath);
@@ -380,22 +419,22 @@ void resumeADBlock() {
         executeShellCommands("sync", (const char *[]){"sync", NULL});
         refreshBlockedCounts();
         putConfig("adblock_switch", 0);
-        consoleLog(LOG_LEVEL_DEBUG, "resumeADBlock", "Protection services have been resumed.");
+        consoleLog(LOG_LEVEL_INFO, "resumeADBlock", "Protection services have been resumed.");
     }
     else {
-        consoleLog(LOG_LEVEL_DEBUG, "resumeADBlock", "No backup hosts file found to resume, force resuming protection and running hosts update as a fallback action");
+        consoleLog(LOG_LEVEL_INFO, "resumeADBlock", "No backup hosts file found to resume, force resuming protection and running hosts update as a fallback action");
         putConfig("adblock_switch", 0);
         // i've come to the conclusion that i should have an boolean for this action
         // to stop running --update-hosts everytime.
-        if(!shouldForceReMalwackUpdate) {
-            if(executeShellCommands("/data/adb/modules/Re-Malwack/rmlwk.sh", (const char *[]) {"/data/adb/modules/Re-Malwack/rmlwk.sh", "--update-hosts"}) == 0) shouldForceReMalwackUpdate = true;
+        if(!shouldNotForceReMalwackUpdateNextTime) {
+            if(executeShellCommands("/data/adb/modules/Re-Malwack/rmlwk.sh", (const char *[]) {"/data/adb/modules/Re-Malwack/rmlwk.sh", "--update-hosts"}) == 0) shouldNotForceReMalwackUpdateNextTime = true;
         }
     }
 }
 
 void help(const char *wehgcfbkfbjhyghxdrbtrcdfv) {
     printf("Usage:\n");
-    printf("  %s [OPTION] [ARGUMENTS]\n\n", wehgcfbkfbjhyghxdrbtrcdfv);
+    printf("  %s [OPTION] [ARGUMENTS]\n\n", basename(wehgcfbkfbjhyghxdrbtrcdfv));
     printf("Options:\n");
     printf("-a  |  --add-app <app_name>\t\tAdd an application to the list to stop ad blocker when the app is opened.\n");
     printf("-r  |  --remove-app <app_name>\tRemove an application from the list.\n");
@@ -403,14 +442,14 @@ void help(const char *wehgcfbkfbjhyghxdrbtrcdfv) {
     printf("-e  |  --export-package-list <file>\tExport the encoded app list to a path for restoration.\n");
     printf("-x  |  --enable-daemon\tEnables \n");
     printf("-d  |  --disable-daemon\n");
-    printf("     --help\t\t\tDisplay this help message.\n\n");
+    printf("-h  |  --help\t\t\tDisplay this help message.\n\n");
     printf("Examples:\n");
-    printf("  %s --add-app com.example.myapp\n", wehgcfbkfbjhyghxdrbtrcdfv);
-    printf("  %s --remove-app com.example.myapp\n", wehgcfbkfbjhyghxdrbtrcdfv);
-    printf("  %s --export-package-list apps.txt\n", wehgcfbkfbjhyghxdrbtrcdfv);
-    printf("  %s --import-package-list apps.txt\n", wehgcfbkfbjhyghxdrbtrcdfv);
-    printf("  %s --enable-daemon\n", wehgcfbkfbjhyghxdrbtrcdfv);
-    printf("  %s --disable-daemon\n", wehgcfbkfbjhyghxdrbtrcdfv);
+    printf("  %s --add-app com.example.myapp\n", basename(wehgcfbkfbjhyghxdrbtrcdfv));
+    printf("  %s --remove-app com.example.myapp\n", basename(wehgcfbkfbjhyghxdrbtrcdfv));
+    printf("  %s --export-package-list apps.txt\n", basename(wehgcfbkfbjhyghxdrbtrcdfv));
+    printf("  %s --import-package-list apps.txt\n", basename(wehgcfbkfbjhyghxdrbtrcdfv));
+    printf("  %s --enable-daemon\n", basename(wehgcfbkfbjhyghxdrbtrcdfv));
+    printf("  %s --disable-daemon\n", basename(wehgcfbkfbjhyghxdrbtrcdfv));
 }
 
 void freePointer(void **ptr) {
@@ -418,26 +457,6 @@ void freePointer(void **ptr) {
         free(*ptr);
         *ptr = NULL;
     }
-}
-
-void finishMessage(const char *message, ...) {
-    va_list args;
-    va_start(args, message);
-    FILE *out = NULL;
-    bool toFile = false;
-    if(useStdoutForAllLogs) out = stdout;
-    else {
-        out = fopen(daemonLogs, "a");
-        if(!out) exit(EXIT_FAILURE);
-        toFile = true;
-    }
-    if(!toFile) fprintf(out, "\033[2;30;47m");
-    else fprintf(out, "Final: ");
-    vfprintf(out, message, args);
-    if(!toFile) fprintf(out, "\033[0m\n");
-    else fprintf(out, "\n");
-    va_end(args);
-    exit(EXIT_SUCCESS);
 }
 
 void refreshBlockedCounts() {
@@ -485,4 +504,27 @@ void reWriteModuleProp(const char *desk) {
 
 void killDaemonWhenSignaled(int sig) {
     putConfig("is_daemon_running", NOT_RUNNING_CANT_RUN);
+}
+
+void checkIfModuleExists(void) {
+    DIR *modulePath = opendir(MODPATH);
+    if(!modulePath) abort_instance("checkIfModuleExists", "Failed to open the module directory, please install Re-Malwack to proceed!");
+    closedir(modulePath);
+}
+
+// ZG089's mom grabbed their phhone and told them to lock in for studies, i should too but idc if i score low marks and get
+// passed barely. I HATE THE WHOLE EDUCATION SYSTEM AND THE SOCIETY FOR ALIENATING ME AND MY THOUGHTS. I'm sorry for ZG089 :(
+void appendAlyaProps(void) {
+    int appendedProps = 0;
+    int defaultPropertyValues[] = {0, 1, 0};
+    char *defaultPropertyNames[] = {"is_daemon_running", "enable_daemon", "current_daemon_pid"};    
+    consoleLog(LOG_LEVEL_INFO, "appendAlyaProps", "Appending %d properties that might not exist...", sizeof(defaultPropertyNames) / sizeof(defaultPropertyNames[0]));
+    for(int i = 0; i < sizeof(defaultPropertyNames) / sizeof(defaultPropertyNames[0]); i++) {
+        if(putConfig(defaultPropertyNames[i], defaultPropertyValues[i]) != 0) {
+            putConfigAppend(defaultPropertyNames[i], defaultPropertyValues[i], true);
+            appendedProps++;
+        }
+    }
+    if(appendedProps == 0) consoleLog(LOG_LEVEL_INFO, "appendAlyaProps", "Nothing is appended, required properties are all in place!");
+    else consoleLog(LOG_LEVEL_INFO, "appendAlyaProps", "Finished appending %d properties..", appendedProps);
 }

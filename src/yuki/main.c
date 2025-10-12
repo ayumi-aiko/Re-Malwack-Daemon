@@ -19,8 +19,8 @@
 // vars:
 int blockedMod = 0;
 int blockedSys = 0;
-bool useStdoutForAllLogs = false;
-bool shouldForceReMalwackUpdate = false;
+bool useStdoutForAllLogs = true;
+bool shouldNotForceReMalwackUpdateNextTime = false;
 char *version = NULL;
 char *versionCode = NULL;
 const char *configScriptPath = "/data/adb/Re-Malwack/config.sh";
@@ -44,6 +44,8 @@ int main(int argc, char *argv[]) {
     if(!versionCode) abort_instance("main-daemon", "Could not find 'versionCode' in module.prop");
     consoleLog(LOG_LEVEL_INFO, "main-daemon", "Re-Malwack %s (versionCode: %s) is starting...", version, versionCode);
     printBannerWithRandomFontStyle();
+    checkIfModuleExists();
+    appendAlyaProps();
     if(getuid()) abort_instance("main-daemon", "daemon is not running as root.");
     // force stop termux instance if it's found to be in top. Just to be sure that 
     // termux should't handle the loop and it can't run some basic commands, that's why im stopping termux users.
@@ -103,7 +105,7 @@ int main(int argc, char *argv[]) {
             }
             else if(access(daemonLockFileFailure, F_OK) == 0) {
                 consoleLog(LOG_LEVEL_DEBUG, "main-daemon", "An reset was triggered. Reverting to previous state...");
-                if(executeShellCommands("su", (const char*[]) {"su", "-c", "cp", "-af", previousDaemonPackageLists, daemonPackageLists, NULL}) == 0) {
+                if(executeShellCommands("su", (const char*[]) {"su", "-c", "cp", "-af", previousDaemonPackageLists, daemonPackageLists, NULL}) != 0) {
                     abort_instance("main-daemon", "Failed to restore the package list, please try again!");
                 }
                 else {
