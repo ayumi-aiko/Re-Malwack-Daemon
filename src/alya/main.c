@@ -35,6 +35,7 @@ const char *daemonPackageLists = "/data/adb/Re-Malwack/remalwack-package-lists.t
 const char *daemonLockFileStuck = "/data/adb/Re-Malwack/.daemon0";
 const char *daemonLockFileSuccess = "/data/adb/Re-Malwack/.daemon1";
 const char *daemonLockFileFailure = "/data/adb/Re-Malwack/.daemon2";
+const char *killDaemon = "/data/adb/Re-Malwack/.daemon3";
 const char *systemHostsPath = "/system/etc/hosts";
 
 // never used struct that much, but here i'm using this 
@@ -47,8 +48,8 @@ struct option longOptions[] = {
     {"export-package-list", required_argument, 0, 'e'},
     {"enable-daemon", no_argument, 0, 'x'},
     {"disable-daemon", no_argument, 0, 'd'},
-    {"is-yuki", required_argument, 0, 'y'},
     {"lana-app", no_argument, 0, 'l'},
+    {"kill-daemon", no_argument, 0, 'k'},
     {0,0,0,0}
 };
 
@@ -56,10 +57,10 @@ int main(int argc, char *argv[]) {
     printBannerWithRandomFontStyle();
     checkIfModuleExists();
     appendAlyaProps();
-    if(getuid()) abort_instance("main-roshidere", "This binary should be running as root.");
+    if(getuid()) abort_instance("main-alya", "This binary should be running as root.");
     int opt;
     int longindex = 0;
-    while((opt = getopt_long(argc, argv, "ha:r:i:e:xdy:", longOptions, &longindex)) != -1) {
+    while((opt = getopt_long(argc, argv, "ha:r:i:e:xdy:k", longOptions, &longindex)) != -1) {
         switch(opt) {
             default:
             case 'h':
@@ -69,58 +70,56 @@ int main(int argc, char *argv[]) {
                 useStdoutForAllLogs = false;
             break;
             case 'a':
-                if(isPackageInList(optarg)) consoleLog(LOG_LEVEL_INFO, "main-roshidere", "Existing package can't be added once again!");
+                if(isPackageInList(optarg)) consoleLog(LOG_LEVEL_INFO, "main-alya", "Existing package can't be added once again!");
                 else addPackageToList(optarg);
                 return 0;
             break;
             case 'r':
                 if(isPackageInList(optarg)) {
                     removePackageFromList(optarg);
-                    consoleLog(LOG_LEVEL_INFO, "main-roshidere", "Requested package has been removed successfully!");
+                    consoleLog(LOG_LEVEL_INFO, "main-alya", "Requested package has been removed successfully!");
                 }
-                else abort_instance("main-roshidere", "%s is not found in the list.", optarg);
+                else abort_instance("main-alya", "%s is not found in the list.", optarg);
             break;
             case 'i':
                 eraseFile(daemonLockFileStuck);
-                if(access(optarg, F_OK) != 0) abort_instance("main-roshidere", "Failed to access the given import package lists file.");
+                if(access(optarg, F_OK) != 0) abort_instance("main-alya", "Failed to access the given import package lists file.");
                 if(copyTextFile(optarg, daemonPackageLists)) {
                     eraseFile(daemonLockFileSuccess);
                     remove(daemonLockFileStuck);
-                    consoleLog(LOG_LEVEL_INFO, "main-roshidere", "Successfully imported the package list. Thank you for using Re-Malwack!");
+                    consoleLog(LOG_LEVEL_INFO, "main-alya", "Successfully imported the package list. Thank you for using Re-Malwack!");
                     return 0;
                 }
                 else {
                     eraseFile(daemonLockFileFailure);
-                    abort_instance("main-roshidere", "Failed to import the package list. Please try again!");
+                    abort_instance("main-alya", "Failed to import the package list. Please try again!");
                 }
             break;
             case 'e':
-                if(access(daemonPackageLists, F_OK) != 0) abort_instance("main-roshidere", "Failed to access the package lists file. It might be corrupted or missing.");
+                if(access(daemonPackageLists, F_OK) != 0) abort_instance("main-alya", "Failed to access the package lists file. It might be corrupted or missing.");
                 if(copyTextFile(daemonPackageLists, optarg)) {
-                    consoleLog(LOG_LEVEL_INFO, "main-roshidere", "Successfully copied the file to the requested location. Thank you for using Re-Malwack!");
+                    consoleLog(LOG_LEVEL_INFO, "main-alya", "Successfully copied the file to the requested location. Thank you for using Re-Malwack!");
                     return 0;
                 }
-                else abort_instance("main-roshidere", "Failed to copy the file to the requested location. Please try again!");
+                else abort_instance("main-alya", "Failed to copy the file to the requested location. Please try again!");
             break;
             case 'x':
-                if(putConfig("enable_daemon", ENABLE_ENABLED) != 0) abort_instance("main-roshidere", "Failed to enable the daemon, please try again!");
-                consoleLog(LOG_LEVEL_INFO, "main-roshidere", "Successfully enabled the daemon, enjoy!");
+                if(putConfig("enable_daemon", ENABLE_ENABLED) != 0) abort_instance("main-alya", "Failed to enable the daemon, please try again!");
+                consoleLog(LOG_LEVEL_INFO, "main-alya", "Successfully enabled the daemon, enjoy!");
+                consoleLog(LOG_LEVEL_INFO, "main-alya", "The app will start yuki soon if you used this argument via yuki. Thank you!");
                 return 0;
             break;
             case 'd':
-                if(putConfig("enable_daemon", DISABLE_DISABLED) != 0) abort_instance("main-roshidere", "Failed to disable the daemon, please try again!");
-                consoleLog(LOG_LEVEL_INFO, "main-roshidere", "Successfully enabled the daemon, enjoy!");
+                if(putConfig("enable_daemon", DISABLE_DISABLED) != 0) abort_instance("main-alya", "Failed to disable the daemon, please try again!");
+                consoleLog(LOG_LEVEL_INFO, "main-alya", "Successfully disabled the daemon, enjoy!");
+                eraseFile(killDaemon);
                 return 0;
             break;
-            case 'y':
-                if(strstr(optarg, "-r") == 0 || strstr(optarg, "-R") == 0) {
-                    if(strcmp(grepProp("is_daemon_running", configScriptPath), "0") != 0) return 1;
-                    return 0;
-                }
-                else if(strstr(optarg, "e") == 0 || strstr(optarg, "E") == 0) {
-                    if(strcmp(grepProp("enable_daemon", configScriptPath), "0") != 0) return 1;
-                    return 0;
-                }
+            case 'k':
+                consoleLog(LOG_LEVEL_INFO, "main-alya", "Yuki should die within 1-2 seconds, if it takes more than it, it means that it's either updating or got stucked somehow. Reboot your device if you are unsure!");
+                eraseFile(killDaemon);
+                putConfig("current_daemon_pid", -1);
+                return 0;
             break;
         }
     }

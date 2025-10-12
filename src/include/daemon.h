@@ -49,6 +49,7 @@ extern const char *daemonLockFileStuck;
 extern const char *daemonPackageLists;
 extern const char *daemonLockFileSuccess;
 extern const char *systemHostsPath;
+extern const char *killDaemon;
 enum elogLevel {
     LOG_LEVEL_INFO,
     LOG_LEVEL_WARN,

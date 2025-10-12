@@ -278,8 +278,8 @@ void consoleLog(enum elogLevel loglevel, const char *service, const char *messag
     }
     switch(loglevel) {
         case LOG_LEVEL_INFO:
-            if(!toFile) fprintf(out, "\033[2;30;47mINFO: ");
-            else fprintf(out, "%s: ", service);
+            if(!toFile) fprintf(out, "\033[2;30;47m- ");
+            else fprintf(out, "INFO: %s: ", service);
         break;
         case LOG_LEVEL_WARN:
             if(!toFile) fprintf(out, "\033[1;33mWARNING: ");
@@ -493,7 +493,7 @@ void reWriteModuleProp(const char *desk) {
     char content[1024];
     while(fgets(content, sizeof(content), moduleProp)) {
         // let's remove the newline if we are in desc.
-        if(strstr(content, "description")) { 
+        if(strstr(content, "description=")) { 
             content[strcspn(content, "\n")] = 0;
             fprintf(moduleProp, "description=%s\n", desk);
         }
@@ -503,7 +503,8 @@ void reWriteModuleProp(const char *desk) {
 }
 
 void killDaemonWhenSignaled(int sig) {
-    putConfig("is_daemon_running", NOT_RUNNING_CANT_RUN);
+    putConfig("is_daemon_running", NOT_RUNNING_CANT_RUN); 
+    putConfig("current_daemon_pid", -1);
 }
 
 void checkIfModuleExists(void) {
@@ -516,7 +517,7 @@ void checkIfModuleExists(void) {
 // passed barely. I HATE THE WHOLE EDUCATION SYSTEM AND THE SOCIETY FOR ALIENATING ME AND MY THOUGHTS. I'm sorry for ZG089 :(
 void appendAlyaProps(void) {
     int appendedProps = 0;
-    int defaultPropertyValues[] = {0, 1, 0};
+    int defaultPropertyValues[] = {0, 1, -1};
     char *defaultPropertyNames[] = {"is_daemon_running", "enable_daemon", "current_daemon_pid"};    
     consoleLog(LOG_LEVEL_INFO, "appendAlyaProps", "Appending %d properties that might not exist...", sizeof(defaultPropertyNames) / sizeof(defaultPropertyNames[0]));
     for(int i = 0; i < sizeof(defaultPropertyNames) / sizeof(defaultPropertyNames[0]); i++) {

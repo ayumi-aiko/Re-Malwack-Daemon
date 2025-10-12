@@ -21,17 +21,21 @@ make all SDK=28 ARCH=arm64
 - Alya is a program for managing the daemon in CLI.
 - Below are argument usage examples:
 ```
-alya --add-app <app package name, ex: com.android.conan> | Adds the app from the blocklist
+alya -a | --add-app <app package name, ex: com.android.conan> | Adds the app from the blocklist
 
-alya --remove-app <app package name, ex: com.android.conan> | Removes the app from the blocklist
+alya -r | --remove-app <app package name, ex: com.android.conan> | Removes the app from the blocklist
 
-alya --export-package-list <path, ex: /sdcard/export-alya.txt> | For exporting the package lists
+alya -e | --export-package-list <path, ex: /sdcard/export-alya.txt> | For exporting the package lists
 
-alya --import-package-list <path, ex: /sdcard/export-alya.txt> | For importing the package lists
+alya -i | --import-package-list <path, ex: /sdcard/export-alya.txt> | For importing the package lists
 
-alya --enable-daemon | Enables the "yuki" program to work.
+alya -x | --enable-daemon | Enables the "yuki" program to work.
 
-alya --disable-daemon | Disables the "yuki" program.
+alya -d | --disable-daemon | Disables the "yuki" program.
+
+alya -k | --kill-daemon | Kills daemon (yuki).
+
+alya --lana-app | -l: Sets the `useStdoutForAllLogs` to false to throw all output to the logs.
 ```
 
 ## Yuki
